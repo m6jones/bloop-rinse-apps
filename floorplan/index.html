@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Room Layout Planner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom Styles */
+        body {
+            font-family: 'Inter', sans-serif;
+            overscroll-behavior: none; /* Prevents pull-to-refresh on mobile */
+        }
+
+        /* Main layout: canvas on the left/top, side panel on the right/bottom */
+        #app-container {
+            display: flex;
+            flex-direction: column-reverse; /* Mobile first: panel below */
+        }
+        @media (min-width: 1024px) {
+            #app-container {
+                flex-direction: row; /* Desktop: panel on the side */
+            }
+        }
+
+        #main-canvas {
+            flex-grow: 1;
+            padding: 2rem;
+            background-color: #f0f4f8;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #grid-container {
+            display: grid;
+            grid-template-columns: repeat(5, 150px);
+            grid-template-rows: repeat(9, 150px);
+            gap: 4px;
+            margin-bottom: 1rem;
+        }
+
+        .grid-cell {
+            width: 150px;
+            height: 150px;
+            background-color: #cbd5e1;
+            border: 2px dashed #94a3b8;
+            border-radius: 8px;
+            transition: background-color 0.2s, border-color 0.2s;
+            position: relative;
+        }
+        
+        .grid-cell.drag-over {
+            background-color: #99f6e4;
+            border-color: #14b8a6;
+        }
+
+        #extra-space .grid-cell {
+             border-style: solid;
+        }
+
+        #side-panel {
+            width: 100%;
+            max-height: 50vh; /* Limit height on mobile */
+            overflow-y: auto;
+            background-color: #ffffff;
+            border-top: 1px solid #e2e8f0;
+        }
+        @media (min-width: 1024px) {
+            #side-panel {
+                width: 384px; /* Fixed width on desktop */
+                max-height: 100vh;
+                border-top: none;
+                border-left: 1px solid #e2e8f0;
+            }
+        }
+
+        .room-item-source {
+            cursor: grab;
+            transition: transform 0.2s;
+        }
+        .room-item-source:active {
+            cursor: grabbing;
+            transform: scale(0.95);
+        }
+
+        /* Ghost element for touch dragging */
+        #touch-ghost {
+            position: absolute;
+            pointer-events: none;
+            opacity: 0.8;
+            z-index: 1000;
+            transform: translate(-50%, -50%); /* Center on finger */
+            transition: opacity 0.2s;
+        }
+
+        /* Placed room item on the grid */
+        .placed-room {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .placed-room img {
+            max-width: 100%;
+            max-height: 100%;
+            pointer-events: none; /* Allows clicks to pass through to buttons */
+            transition: transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+        }
+        .placed-room .rotate-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: rgba(0, 0, 0, 0.6);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 10;
+        }
+        .placed-room:hover .rotate-btn {
+            opacity: 1;
+        }
+        .placed-room .rotate-left { left: -16px; }
+        .placed-room .rotate-right { right: -16px; }
+
+        /* Accordion styles */
+        .accordion-content {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+            overflow: hidden;
+            transition: max-height 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div id="app-container" class="min-h-screen">
+        <!-- Main Canvas Area -->
+        <main id="main-canvas">
+            <div id="grid-container"></div>
+            <div id="extra-space" class="mt-4"></div>
+        </main>
+
+        <!-- Side Panel -->
+        <aside id="side-panel" class="shadow-lg">
+            <div class="p-4 sticky top-0 bg-white z-10 border-b">
+                <h1 class="text-2xl font-bold text-gray-800">Rooms</h1>
+                <p class="text-sm text-gray-500">Drag a room to the canvas.</p>
+            </div>
+            <div id="room-list" class="p-4">
+                <!-- Room accordions will be generated here -->
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        const roomData = [
+            { "name": "The Foundation", "type": "Rooms 001-012", "imagePath": "./room_images/The_Foundation.png" },
+            { "name": "Entrance Hall", "type": "Rooms 001-012", "imagePath": "./room_images/Entrance_Hall.png" },
+            { "name": "Spare Room", "type": "Rooms 001-012", "imagePath": "./room_images/Spare_Room.png" },
+            { "name": "Rotunda", "type": "Rooms 001-012", "imagePath": "./room_images/Rotunda.png" },
+            { "name": "Parlor", "type": "Rooms 001-012", "imagePath": "./room_images/Parlor.png" },
+            { "name": "Billiard Room", "type": "Rooms 001-012", "imagePath": "./room_images/Billiard_Room.png" },
+            { "name": "Gallery", "type": "Rooms 001-012", "imagePath": "./room_images/Gallery.png" },
+            { "name": "Room 8", "type": "Rooms 001-012", "imagePath": "./room_images/Room_8.png" },
+            { "name": "Closet", "type": "Rooms 001-012", "imagePath": "./room_images/Closet.png" },
+            { "name": "Walk-in Closet", "type": "Rooms 001-012", "imagePath": "./room_images/Walk-in_Closet.png" },
+            { "name": "Attic", "type": "Rooms 001-012", "imagePath": "./room_images/Attic.png" },
+            { "name": "Storeroom", "type": "Rooms 001-012", "imagePath": "./room_images/Storeroom.png" },
+            { "name": "Nook", "type": "Rooms 013-024", "imagePath": "./room_images/Nook.png" },
+            { "name": "Garage", "type": "Rooms 013-024", "imagePath": "./room_images/Garage.png" },
+            { "name": "Music Room", "type": "Rooms 013-024", "imagePath": "./room_images/Music_Room.png" },
+            { "name": "Locker Room", "type": "Rooms 013-024", "imagePath": "./room_images/Locker_Room.png" },
+            { "name": "Den", "type": "Rooms 013-024", "imagePath": "./room_images/Den.png" },
+            { "name": "Wine Cellar", "type": "Rooms 013-024", "imagePath": "./room_images/Wine_Cellar.png" },
+            { "name": "Trophy Room", "type": "Rooms 013-024", "imagePath": "./room_images/Trophy_Room.png" },
+            { "name": "Ballroom", "type": "Rooms 013-024", "imagePath": "./room_images/Ballroom.png" },
+            { "name": "Pantry", "type": "Rooms 013-024", "imagePath": "./room_images/Pantry.png" },
+            { "name": "Rumpus Room", "type": "Rooms 013-024", "imagePath": "./room_images/Rumpus_Room.png" },
+            { "name": "Vault", "type": "Rooms 013-024", "imagePath": "./room_images/Vault.png" },
+            { "name": "Office", "type": "Rooms 013-024", "imagePath": "./room_images/Office.png" },
+            { "name": "Drawing Room", "type": "Rooms 025-036", "imagePath": "./room_images/Drawing_Room.png" },
+            { "name": "Study", "type": "Rooms 025-036", "imagePath": "./room_images/Study.png" },
+            { "name": "Library", "type": "Rooms 025-036", "imagePath": "./room_images/Library.png" },
+            { "name": "Chamber of Mirrors", "type": "Rooms 025-036", "imagePath": "./room_images/Chamber_of_Mirrors.png" },
+            { "name": "The Pool", "type": "Rooms 025-036", "imagePath": "./room_images/The_Pool.png" },
+            { "name": "Drafting Studio", "type": "Rooms 025-036", "imagePath": "./room_images/Drafting_Studio.png" },
+            { "name": "Utility Closet", "type": "Rooms 025-036", "imagePath": "./room_images/Utility_Closet.png" },
+            { "name": "Boiler Room", "type": "Rooms 025-036", "imagePath": "./room_images/Boiler_Room.png" },
+            { "name": "Pump Room", "type": "Rooms 025-036", "imagePath": "./room_images/Pump_Room.png" },
+            { "name": "Security", "type": "Rooms 025-036", "imagePath": "./room_images/Security.png" },
+            { "name": "Workshop", "type": "Rooms 025-036", "imagePath": "./room_images/Workshop.png" },
+            { "name": "Laboratory", "type": "Rooms 025-036", "imagePath": "./room_images/Laboratory.png" },
+            { "name": "Sauna", "type": "Rooms 037-046", "imagePath": "./room_images/Sauna.png" },
+            { "name": "Coat Check", "type": "Rooms 037-046", "imagePath": "./room_images/Coat_Check.png" },
+            { "name": "Mail Room", "type": "Rooms 037-046", "imagePath": "./room_images/Mail_Room.png" },
+            { "name": "Freezer", "type": "Rooms 037-046", "imagePath": "./room_images/Freezer.png" },
+            { "name": "Dining Room", "type": "Rooms 037-046", "imagePath": "./room_images/Dining_Room.png" },
+            { "name": "Observatory", "type": "Rooms 037-046", "imagePath": "./room_images/Observatory.png" },
+            { "name": "Conference Room", "type": "Rooms 037-046", "imagePath": "./room_images/Conference_Room.png" },
+            { "name": "Aquarium", "type": "Rooms 037-046", "imagePath": "./room_images/Aquarium.png" },
+            { "name": "Antechamber", "type": "Rooms 037-046", "imagePath": "./room_images/Antechamber.png" },
+            { "name": "Room 46", "type": "Rooms 037-046", "imagePath": "./room_images/Room_46.png" },
+            { "name": "Bedroom", "type": "Bedrooms", "imagePath": "./room_images/Bedroom.png" },
+            { "name": "Boudoir", "type": "Bedrooms", "imagePath": "./room_images/Boudoir.png" },
+            { "name": "Guest Bedroom", "type": "Bedrooms", "imagePath": "./room_images/Guest_Bedroom.png" },
+            { "name": "Nursery", "type": "Bedrooms", "imagePath": "./room_images/Nursery.png" },
+            { "name": "Servant's Quarters", "type": "Bedrooms", "imagePath": "./room_images/Servants_Quarters.png" },
+            { "name": "Bunk Room", "type": "Bedrooms", "imagePath": "./room_images/Bunk_Room.png" },
+            { "name": "Her Ladyship's Chamber", "type": "Bedrooms", "imagePath": "./room_images/Her_Ladyships_Chamber.png" },
+            { "name": "Master Bedroom", "type": "Bedrooms", "imagePath": "./room_images/Master_Bedroom.png" },
+            { "name": "Hallway", "type": "Hallways", "imagePath": "./room_images/Hallway.png" },
+            { "name": "West Wing Hall", "type": "Hallways", "imagePath": "./room_images/West_Wing_Hall.png" },
+            { "name": "East Wing Hall", "type": "Hallways", "imagePath": "./room_images/East_Wing_Hall.png" },
+            { "name": "Corridor", "type": "Hallways", "imagePath": "./room_images/Corridor.png" },
+            { "name": "Passageway", "type": "Hallways", "imagePath": "./room_images/Passageway.png" },
+            { "name": "Secret Passage", "type": "Hallways", "imagePath": "./room_images/Secret_Passage.png" },
+            { "name": "Foyer", "type": "Hallways", "imagePath": "./room_images/Foyer.png" },
+            { "name": "Great Hall", "type": "Hallways", "imagePath": "./room_images/Great_Hall.png" },
+            { "name": "Terrace", "type": "Green Rooms", "imagePath": "./room_images/Terrace.png" },
+            { "name": "Patio", "type": "Green Rooms", "imagePath": "./room_images/Patio.png" },
+            { "name": "Courtyard", "type": "Green Rooms", "imagePath": "./room_images/Courtyard.png" },
+            { "name": "Cloister", "type": "Green Rooms", "imagePath": "./room_images/Cloister.png" },
+            { "name": "Veranda", "type": "Green Rooms", "imagePath": "./room_images/Veranda.png" },
+            { "name": "Greenhouse", "type": "Green Rooms", "imagePath": "./room_images/Greenhouse.png" },
+            { "name": "Morning Room", "type": "Green Rooms", "imagePath": "./room_images/Morning_Room.png" },
+            { "name": "Secret Garden", "type": "Green Rooms", "imagePath": "./room_images/Secret_Garden.png" },
+            { "name": "Commissary", "type": "Shops", "imagePath": "./room_images/Commissary.png" },
+            { "name": "Kitchen", "type": "Shops", "imagePath": "./room_images/Kitchen.png" },
+            { "name": "Locksmith", "type": "Shops", "imagePath": "./room_images/Locksmith.png" },
+            { "name": "Showroom", "type": "Shops", "imagePath": "./room_images/Showroom.png" },
+            { "name": "Laundry Room", "type": "Shops", "imagePath": "./room_images/Laundry_Room.png" },
+            { "name": "Bookshop", "type": "Shops", "imagePath": "./room_images/Bookshop.png" },
+            { "name": "The Armory", "type": "Shops", "imagePath": "./room_images/The_Armory.png" },
+            { "name": "Gift Shop", "type": "Shops", "imagePath": "./room_images/Gift_Shop.png" },
+            { "name": "Lavatory", "type": "Red Rooms", "imagePath": "./room_images/Lavatory.png" },
+            { "name": "Chapel", "type": "Red Rooms", "imagePath": "./room_images/Chapel.png" },
+            { "name": "Maid's Chamber", "type": "Red Rooms", "imagePath": "./room_images/Maids_Chamber.png" },
+            { "name": "Archives", "type": "Red Rooms", "imagePath": "./room_images/Archives.png" },
+            { "name": "Gymnasium", "type": "Red Rooms", "imagePath": "./room_images/Gymnasium.png" },
+            { "name": "Darkroom", "type": "Red Rooms", "imagePath": "./room_images/Darkroom.png" },
+            { "name": "Weight Room", "type": "Red Rooms", "imagePath": "./room_images/Weight_Room.png" },
+            { "name": "Furnace", "type": "Red Rooms", "imagePath": "./room_images/Furnace.png" },
+            { "name": "Dovecote", "type": "Uncategorized", "imagePath": "./room_images/Dovecote.png" },
+            { "name": "The Kennel", "type": "Uncategorized", "imagePath": "./room_images/The_Kennel.png" },
+            { "name": "Clock Tower", "type": "Uncategorized", "imagePath": "./room_images/Clock_Tower.png" },
+            { "name": "Classroom", "type": "Uncategorized", "imagePath": "./room_images/Classroom.png" },
+            { "name": "Solarium", "type": "Uncategorized", "imagePath": "./room_images/Solarium.png" },
+            { "name": "Dormitory", "type": "Uncategorized", "imagePath": "./room_images/Dormitory.png" },
+            { "name": "Vestibule", "type": "Uncategorized", "imagePath": "./room_images/Vestibule.png" },
+            { "name": "Casino", "type": "Uncategorized", "imagePath": "./room_images/Casino.png" },
+            { "name": "Planetarium", "type": "Uncategorized", "imagePath": "./room_images/Planetarium.png" },
+            { "name": "Mechanarium", "type": "Uncategorized", "imagePath": "./room_images/Mechanarium.png" },
+            { "name": "Treasure Trove", "type": "Uncategorized", "imagePath": "./room_images/Treasure_Trove.png" },
+            { "name": "Throne Room", "type": "Uncategorized", "imagePath": "./room_images/Throne_Room.png" },
+            { "name": "Tunnel", "type": "Uncategorized", "imagePath": "./room_images/Tunnel.png" },
+            { "name": "Conservatory", "type": "Uncategorized", "imagePath": "./room_images/Conservatory.png" },
+            { "name": "Lost & Found", "type": "Uncategorized", "imagePath": "./room_images/Lost__Found.png" },
+            { "name": "Closed Exhibit", "type": "Uncategorized", "imagePath": "./room_images/Closed_Exhibit.png" },
+            { "name": "Toolshed", "type": "Uncategorized", "imagePath": "./room_images/Toolshed.png" },
+            { "name": "Shelter", "type": "Uncategorized", "imagePath": "./room_images/Shelter.png" },
+            { "name": "Schoolhouse", "type": "Uncategorized", "imagePath": "./room_images/Schoolhouse.png" },
+            { "name": "Shrine", "type": "Uncategorized", "imagePath": "./room_images/Shrine.png" },
+            { "name": "Root Cellar", "type": "Uncategorized", "imagePath": "./room_images/Root_Cellar.png" },
+            { "name": "Hovel", "type": "Uncategorized", "imagePath": "./room_images/Hovel.png" },
+            { "name": "Trading Post", "type": "Uncategorized", "imagePath": "./room_images/Trading_Post.png" },
+            { "name": "Tomb", "type": "Uncategorized", "imagePath": "./room_images/Tomb.png" }
+        ];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const gridContainer = document.getElementById('grid-container');
+            const extraSpaceContainer = document.getElementById('extra-space');
+            const roomListContainer = document.getElementById('room-list');
+
+            const GRID_ROWS = 9;
+            const GRID_COLS = 5;
+
+            // --- STATE & INITIALIZATION ---
+
+            // Group rooms by type for the accordion
+            const roomsByType = roomData.reduce((acc, room) => {
+                (acc[room.type] = acc[room.type] || []).push(room);
+                return acc;
+            }, {});
+
+            // Generate the main grid and extra space
+            for (let r = 0; r < GRID_ROWS; r++) {
+                for (let c = 0; c < GRID_COLS; c++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('grid-cell');
+                    cell.dataset.id = `cell-${r}-${c}`;
+                    addDropListeners(cell);
+                    gridContainer.appendChild(cell);
+                }
+            }
+            const extraCell = document.createElement('div');
+            extraCell.classList.add('grid-cell');
+            extraCell.dataset.id = 'extra-0';
+            addDropListeners(extraCell);
+            extraSpaceContainer.appendChild(extraCell);
+
+
+            // Generate the side panel with accordions
+            Object.keys(roomsByType).sort().forEach(type => {
+                const accordionWrapper = document.createElement('div');
+                accordionWrapper.className = 'mb-2 border rounded-lg';
+
+                const header = document.createElement('button');
+                header.className = 'w-full p-3 text-left font-semibold bg-gray-100 hover:bg-gray-200 rounded-t-lg focus:outline-none flex justify-between items-center';
+                header.innerHTML = `<span>${type}</span><svg class="w-5 h-5 transition-transform transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>`;
+                
+                const content = document.createElement('div');
+                content.className = 'accordion-content p-2 bg-white rounded-b-lg';
+                content.style.maxHeight = '0px';
+
+                roomsByType[type].forEach(room => {
+                    const roomEl = document.createElement('div');
+                    roomEl.className = 'room-item-source border rounded-lg p-1 text-center bg-gray-50';
+                    roomEl.draggable = true;
+                    roomEl.dataset.roomName = room.name;
+                    roomEl.innerHTML = `<img src="${room.imagePath}" alt="${room.name}" class="mx-auto h-20 object-contain pointer-events-none"><span class="text-xs text-gray-700">${room.name}</span>`;
+                    addDragListeners(roomEl);
+                    content.appendChild(roomEl);
+                });
+
+                header.addEventListener('click', () => {
+                    const icon = header.querySelector('svg');
+                    if (content.style.maxHeight === '0px') {
+                        content.style.maxHeight = content.scrollHeight + "px";
+                        icon.classList.add('rotate-180');
+                    } else {
+                        content.style.maxHeight = "0px";
+                        icon.classList.remove('rotate-180');
+                    }
+                });
+                
+                accordionWrapper.appendChild(header);
+                accordionWrapper.appendChild(content);
+                roomListContainer.appendChild(accordionWrapper);
+            });
+
+            // Load initial layout from URL
+            loadLayoutFromURL();
+
+
+            // --- DRAG & DROP LOGIC (Mouse & Touch) ---
+
+            let touchGhost = null;
+            let draggedRoomName = null;
+            let currentDropTarget = null;
+            
+            function addDragListeners(el) {
+                // Mouse drag events
+                el.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', el.dataset.roomName);
+                    draggedRoomName = el.dataset.roomName;
+                });
+
+                // Touch drag events
+                el.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    draggedRoomName = el.dataset.roomName;
+                    
+                    if (!touchGhost) {
+                        const roomInfo = roomData.find(r => r.name === draggedRoomName);
+                        touchGhost = document.createElement('img');
+                        touchGhost.id = 'touch-ghost';
+                        touchGhost.src = roomInfo.imagePath;
+                        touchGhost.style.width = '120px';
+                        touchGhost.style.height = '120px';
+                        document.body.appendChild(touchGhost);
+                    }
+                    updateGhostPosition(e.touches[0]);
+                }, { passive: false });
+            }
+
+            document.addEventListener('touchmove', (e) => {
+                if (!touchGhost) return;
+                e.preventDefault();
+                updateGhostPosition(e.touches[0]);
+            }, { passive: false });
+
+            document.addEventListener('touchend', (e) => {
+                if (!touchGhost) return;
+                touchGhost.style.opacity = '0';
+
+                if (currentDropTarget) {
+                    placeRoom(currentDropTarget, draggedRoomName);
+                    currentDropTarget.classList.remove('drag-over');
+                }
+                
+                setTimeout(() => {
+                    document.body.removeChild(touchGhost);
+                    touchGhost = null;
+                    draggedRoomName = null;
+                    currentDropTarget = null;
+                }, 200);
+            });
+
+            function updateGhostPosition(touch) {
+                touchGhost.style.left = `${touch.clientX}px`;
+                touchGhost.style.top = `${touch.clientY}px`;
+                
+                // Hide ghost to find element underneath
+                touchGhost.style.display = 'none';
+                const elementUnder = document.elementFromPoint(touch.clientX, touch.clientY);
+                touchGhost.style.display = 'block';
+
+                if (currentDropTarget && currentDropTarget !== elementUnder) {
+                    currentDropTarget.classList.remove('drag-over');
+                }
+                
+                if (elementUnder && elementUnder.classList.contains('grid-cell')) {
+                    currentDropTarget = elementUnder;
+                    currentDropTarget.classList.add('drag-over');
+                } else {
+                    currentDropTarget = null;
+                }
+            }
+
+
+            function addDropListeners(cell) {
+                cell.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    cell.classList.add('drag-over');
+                });
+                cell.addEventListener('dragleave', () => {
+                    cell.classList.remove('drag-over');
+                });
+                cell.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    cell.classList.remove('drag-over');
+                    const roomName = e.dataTransfer.getData('text/plain');
+                    placeRoom(cell, roomName);
+                });
+            }
+
+            // --- PLACEMENT & ROTATION LOGIC ---
+
+            function placeRoom(cell, roomName, rotation = 0) {
+                const roomInfo = roomData.find(r => r.name === roomName);
+                if (!roomInfo) return;
+
+                cell.innerHTML = ''; // Clear previous content
+
+                const placedRoom = document.createElement('div');
+                placedRoom.className = 'placed-room';
+                placedRoom.dataset.roomName = roomName;
+                placedRoom.dataset.rotation = rotation;
+
+                const img = document.createElement('img');
+                img.src = roomInfo.imagePath;
+                img.alt = roomInfo.name;
+                img.style.transform = `rotate(${rotation}deg)`;
+                
+                const rotateLeftBtn = document.createElement('button');
+                rotateLeftBtn.innerHTML = '&#8634;';
+                rotateLeftBtn.className = 'rotate-btn rotate-left';
+                rotateLeftBtn.onclick = () => handleRotate(placedRoom, -90);
+
+                const rotateRightBtn = document.createElement('button');
+                rotateRightBtn.innerHTML = '&#8635;';
+                rotateRightBtn.className = 'rotate-btn rotate-right';
+                rotateRightBtn.onclick = () => handleRotate(placedRoom, 90);
+
+                placedRoom.appendChild(rotateLeftBtn);
+                placedRoom.appendChild(img);
+                placedRoom.appendChild(rotateRightBtn);
+                cell.appendChild(placedRoom);
+                updateURL();
+            }
+
+            function handleRotate(placedRoom, angle) {
+                const img = placedRoom.querySelector('img');
+                let currentRotation = parseInt(placedRoom.dataset.rotation || '0', 10);
+                currentRotation = (currentRotation + angle + 360) % 360;
+                placedRoom.dataset.rotation = currentRotation;
+                img.style.transform = `rotate(${currentRotation}deg)`;
+                updateURL();
+            }
+
+            // --- URL STATE MANAGEMENT ---
+
+            function updateURL() {
+                try {
+                    const layout = [];
+                    document.querySelectorAll('.grid-cell').forEach(cell => {
+                        const placedRoom = cell.querySelector('.placed-room');
+                        if (placedRoom) {
+                            const cellId = cell.dataset.id;
+                            const roomName = placedRoom.dataset.roomName;
+                            const rotation = placedRoom.dataset.rotation;
+                            layout.push(`${cellId}:${encodeURIComponent(roomName)}:${rotation}`);
+                        }
+                    });
+                    const layoutString = layout.join('|');
+                    const newUrl = `${window.location.pathname}?layout=${layoutString}`;
+                    window.history.replaceState({ path: newUrl }, '', newUrl);
+                } catch (error) {
+                    console.warn("URL could not be updated, possibly due to sandbox restrictions.", error);
+                }
+            }
+
+            function loadLayoutFromURL() {
+                const params = new URLSearchParams(window.location.search);
+                const layoutString = params.get('layout');
+                if (!layoutString) return;
+
+                layoutString.split('|').forEach(item => {
+                    const [cellId, encodedRoomName, rotation] = item.split(':');
+                    if(cellId && encodedRoomName && rotation) {
+                        const roomName = decodeURIComponent(encodedRoomName);
+                        const cell = document.querySelector(`[data-id='${cellId}']`);
+                        if (cell) {
+                            placeRoom(cell, roomName, parseInt(rotation, 10));
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
+
