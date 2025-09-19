@@ -30,21 +30,34 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            overflow-y: auto; /* Allow canvas area to scroll if content is too tall */
+        }
+
+        #resizable-canvas {
+            resize: both;
+            overflow: auto;
+            border: 1px solid #a0aec0;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            width: 800px; /* Default width */
+            height: 90vh; /* Default height */
+            min-width: 340px; /* Prevent collapsing too small */
+            min-height: 340px;
+            display: grid;
+            grid-template-columns: 1fr 5fr;
+            gap: 4px;
         }
 
         #grid-container {
             display: grid;
-            grid-template-columns: repeat(5, 150px);
-            grid-template-rows: repeat(9, 150px);
+            grid-template-columns: repeat(5, 1fr);
             gap: 4px;
-            margin-bottom: 1rem;
+            min-height: 0; /* Fix for flexbox shrinking */
         }
 
         .grid-cell {
-            width: 150px;
-            height: 150px;
             background-color: #cbd5e1;
+            aspect-ratio: 1 / 1; /* Force 1:1 aspect ratio */
             border: 2px dashed #94a3b8;
             border-radius: 8px;
             transition: background-color 0.2s, border-color 0.2s;
@@ -55,7 +68,7 @@
             background-color: #99f6e4;
             border-color: #14b8a6;
         }
-
+        
         #extra-space .grid-cell {
              border-style: solid;
         }
@@ -63,13 +76,15 @@
         #side-panel {
             width: 100%;
             max-height: 50vh; /* Limit height on mobile */
-            overflow-y: auto;
             background-color: #ffffff;
             border-top: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
         }
         @media (min-width: 1024px) {
             #side-panel {
                 width: 384px; /* Fixed width on desktop */
+                flex-shrink: 0;
                 max-height: 100vh;
                 border-top: none;
                 border-left: 1px solid #e2e8f0;
@@ -133,8 +148,8 @@
         .placed-room:hover .rotate-btn {
             opacity: 1;
         }
-        .placed-room .rotate-left { left: -16px; }
-        .placed-room .rotate-right { right: -16px; }
+        .placed-room .rotate-left { left: -10px; }
+        .placed-room .rotate-right { right: -10px; }
 
         /* Accordion styles */
         .accordion-content {
@@ -144,25 +159,55 @@
             overflow: hidden;
             transition: max-height 0.3s ease-in-out;
         }
+
+        /* Tab Styles */
+        .tab-btn {
+            background-color: #f7fafc;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .tab-btn.active {
+            font-weight: 600;
+            color: #2d3748;
+            border-bottom-color: #3182ce;
+            background-color: white;
+        }
+        .tab-content.hidden {
+            display: none;
+        }
+
     </style>
 </head>
 <body class="bg-gray-100">
 
-    <div id="app-container" class="min-h-screen">
+    <div id="app-container" class="h-screen">
         <!-- Main Canvas Area -->
         <main id="main-canvas">
-            <div id="grid-container"></div>
-            <div id="extra-space" class="mt-4"></div>
+            <div id="resizable-canvas">
+                <div id="extra-space"></div>
+                <div id="grid-container"></div>
+            </div>
         </main>
 
         <!-- Side Panel -->
         <aside id="side-panel" class="shadow-lg">
-            <div class="p-4 sticky top-0 bg-white z-10 border-b">
-                <h1 class="text-2xl font-bold text-gray-800">Rooms</h1>
-                <p class="text-sm text-gray-500">Drag a room to the canvas.</p>
+            <div class="p-4 sticky top-0 bg-white z-10 border-b flex-shrink-0">
+                <h1 class="text-2xl font-bold text-gray-800">Layout Planner</h1>
             </div>
-            <div id="room-list" class="p-4">
+            <!-- Tabs -->
+            <div class="flex border-b flex-shrink-0">
+                <button class="tab-btn active flex-1 py-2 px-4 text-center text-gray-600" data-tab="rooms">Rooms</button>
+                <button class="tab-btn flex-1 py-2 px-4 text-center text-gray-600" data-tab="options">Options</button>
+            </div>
+
+            <!-- Tab Content -->
+            <div id="room-list" class="p-4 tab-content overflow-y-auto flex-grow min-h-0">
                 <!-- Room accordions will be generated here -->
+            </div>
+            <div id="options-content" class="p-4 tab-content hidden overflow-y-auto flex-grow min-h-0">
+                 <h2 class="text-lg font-semibold mb-2">Canvas Options</h2>
+                 <p class="text-sm text-gray-600 mb-4">Reset the canvas container to its default size.</p>
+                 <button id="reset-size-btn" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 transition-colors">Reset Size</button>
             </div>
         </aside>
     </div>
@@ -285,6 +330,10 @@
             const gridContainer = document.getElementById('grid-container');
             const extraSpaceContainer = document.getElementById('extra-space');
             const roomListContainer = document.getElementById('room-list');
+            const resizableCanvas = document.getElementById('resizable-canvas');
+            const resetSizeBtn = document.getElementById('reset-size-btn');
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            const tabContents = document.querySelectorAll('.tab-content');
 
             const GRID_ROWS = 9;
             const GRID_COLS = 5;
@@ -355,6 +404,62 @@
 
             // Load initial layout from URL
             loadLayoutFromURL();
+            
+            // --- Tab Logic ---
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    // Deactivate all
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    tabContents.forEach(content => content.classList.add('hidden'));
+
+                    // Activate clicked
+                    button.classList.add('active');
+                    const tabName = button.dataset.tab;
+                    const contentToShow = document.getElementById(tabName === 'rooms' ? 'room-list' : 'options-content');
+                    contentToShow.classList.remove('hidden');
+                });
+            });
+
+
+            // --- Canvas Resizing Logic ---
+
+            function applySavedSize() {
+                const savedWidth = localStorage.getItem('canvasWidth');
+                const savedHeight = localStorage.getItem('canvasHeight');
+
+                if (savedWidth && savedHeight) {
+                    resizableCanvas.style.width = savedWidth;
+                    resizableCanvas.style.height = savedHeight;
+                }
+            }
+
+            function resetSize() {
+                localStorage.removeItem('canvasWidth');
+                localStorage.removeItem('canvasHeight');
+                resizableCanvas.style.width = ''; // Resets to CSS default
+                resizableCanvas.style.height = ''; // Resets to CSS default
+            }
+
+            resetSizeBtn.addEventListener('click', resetSize);
+
+            // Use ResizeObserver to save new dimensions on resize
+            const resizeObserver = new ResizeObserver(entries => {
+                window.requestAnimationFrame(() => {
+                    if (!Array.isArray(entries) || !entries.length) {
+                        return;
+                    }
+                    const entry = entries[0];
+                    const newWidth = `${entry.contentRect.width}px`;
+                    const newHeight = `${entry.contentRect.height}px`;
+                    localStorage.setItem('canvasWidth', newWidth);
+                    localStorage.setItem('canvasHeight', newHeight);
+                });
+            });
+
+            resizeObserver.observe(resizableCanvas);
+
+            // Apply any saved size on initial load
+            applySavedSize();
 
 
             // --- DRAG & DROP LOGIC (Mouse & Touch) ---
@@ -404,7 +509,9 @@
                 }
                 
                 setTimeout(() => {
-                    document.body.removeChild(touchGhost);
+                    if (touchGhost && touchGhost.parentNode) {
+                        touchGhost.parentNode.removeChild(touchGhost);
+                    }
                     touchGhost = null;
                     draggedRoomName = null;
                     currentDropTarget = null;
@@ -415,7 +522,6 @@
                 touchGhost.style.left = `${touch.clientX}px`;
                 touchGhost.style.top = `${touch.clientY}px`;
                 
-                // Hide ghost to find element underneath
                 touchGhost.style.display = 'none';
                 const elementUnder = document.elementFromPoint(touch.clientX, touch.clientY);
                 touchGhost.style.display = 'block';
@@ -424,8 +530,9 @@
                     currentDropTarget.classList.remove('drag-over');
                 }
                 
-                if (elementUnder && elementUnder.classList.contains('grid-cell')) {
-                    currentDropTarget = elementUnder;
+                const dropTarget = elementUnder ? elementUnder.closest('.grid-cell') : null;
+                if (dropTarget) {
+                    currentDropTarget = dropTarget;
                     currentDropTarget.classList.add('drag-over');
                 } else {
                     currentDropTarget = null;
@@ -470,12 +577,12 @@
                 const rotateLeftBtn = document.createElement('button');
                 rotateLeftBtn.innerHTML = '&#8634;';
                 rotateLeftBtn.className = 'rotate-btn rotate-left';
-                rotateLeftBtn.onclick = () => handleRotate(placedRoom, -90);
+                rotateLeftBtn.onclick = (e) => { e.stopPropagation(); handleRotate(placedRoom, -90); };
 
                 const rotateRightBtn = document.createElement('button');
                 rotateRightBtn.innerHTML = '&#8635;';
                 rotateRightBtn.className = 'rotate-btn rotate-right';
-                rotateRightBtn.onclick = () => handleRotate(placedRoom, 90);
+                rotateRightBtn.onclick = (e) => { e.stopPropagation(); handleRotate(placedRoom, 90); };
 
                 placedRoom.appendChild(rotateLeftBtn);
                 placedRoom.appendChild(img);
@@ -522,7 +629,7 @@
 
                 layoutString.split('|').forEach(item => {
                     const [cellId, encodedRoomName, rotation] = item.split(':');
-                    if(cellId && encodedRoomName && rotation) {
+                    if(cellId && encodedRoomName && rotation !== undefined) {
                         const roomName = decodeURIComponent(encodedRoomName);
                         const cell = document.querySelector(`[data-id='${cellId}']`);
                         if (cell) {
@@ -535,4 +642,3 @@
     </script>
 </body>
 </html>
-
