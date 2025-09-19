@@ -46,6 +46,21 @@
             background-size: 2rem 2rem;
         }
 
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-color);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent-color);
+            border-radius: 5px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--button-hover-bg-color);
+        }
+
         .hidden { display: none !important; }
 
         .app-container {
@@ -175,6 +190,12 @@
             margin: auto;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .results-accordion {
+            max-height: 50vh;
+            overflow-y: auto;
+            padding-right: 8px;
+        }
 
         .results-accordion .accordion-item {
             border: 1px solid var(--border-color);
@@ -244,7 +265,14 @@
             font-size: 1.125rem;
         }
         
-        .history-table-container { border: 1px solid var(--border-color); border-radius: 0.25rem; overflow-x: auto; background-color: var(--card-bg-color); }
+        .history-table-container { 
+            border: 1px solid var(--border-color); 
+            border-radius: 0.25rem; 
+            overflow-x: auto; 
+            background-color: var(--card-bg-color);
+            max-height: 60vh;
+            overflow-y: auto;
+        }
         .history-table { width: 100%; border-collapse: collapse; }
         .history-table th, .history-table td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid var(--border-color); }
         .history-table th { font-weight: 700; color: var(--text-color-light); font-family: 'Oswald', sans-serif; text-transform: uppercase; }
@@ -505,3 +533,4 @@
     </script>
 </body>
 </html>
+
