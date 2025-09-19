@@ -3,31 +3,30 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Numeric Core Calculator - Blue Prince Edition</title>
+    <title>Numeric Core Calculator - Blueprint Edition</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #0A192F; /* Deep Navy Blue */
-            --card-bg-color: rgba(13, 37, 70, 0.75); /* Translucent Dark Blue */
+            --bg-color: #0d1b2a; /* Deep Blueprint Blue */
+            --grid-color: rgba(66, 135, 245, 0.1);
+            --card-bg-color: rgba(23, 49, 79, 0.85); /* Translucent Dark Blue */
             --text-color: #E6F1FF; /* Light Steel Blue */
             --text-color-light: #8892B0; /* Slate Blue */
-            --border-color: #243E5F; /* Lighter Navy */
-            --button-bg-color: #D4AF37; /* Old Gold */
-            --button-text-color: #0A192F;
-            --button-hover-bg-color: #EAC654; /* Brighter Gold */
-            --input-bg-color: rgba(10, 25, 47, 0.8);
-            --input-border-color: #243E5F;
-            --accordion-bg-color: rgba(13, 37, 70, 0.8);
-            --accordion-expanded-bg: rgba(18, 45, 85, 0.9);
-            --island-bg: #0A192F;
+            --border-color: #1e3a5f; /* Lighter Navy */
+            --accent-color: #4287f5; /* Bright Blueprint Blue */
+            --button-text-color: #ffffff;
+            --button-hover-bg-color: #649ff5;
+            --input-bg-color: rgba(13, 27, 42, 0.8);
+            --input-border-color: #1e3a5f;
+            --accordion-bg-color: rgba(23, 49, 79, 0.8);
+            --accordion-expanded-bg: rgba(30, 58, 95, 0.9);
+            --island-bg: #0d1b2a;
             --island-icon-inactive: #8892B0;
-            --green-text: #6ee7b7; /* Kept for compatibility */
-            --yellow-text: #EAC654; /* Gold for warnings */
-            --red-text: #fca5a5;  /* Kept for compatibility */
-            --accent-text-color: #D4AF37;
-            --canvas-particle-color: 'rgba(212, 175, 55, 0.7)';
+            --green-text: #6ee7b7;
+            --yellow-text: #fde047;
+            --red-text: #fca5a5;
         }
 
         *, *::before, *::after { box-sizing: border-box; }
@@ -39,17 +38,12 @@
             margin: 0;
             padding: 0;
             min-width: 360px;
-            transition: background-color 0.3s ease, color 0.3s ease;
             overflow-x: hidden;
-        }
-
-        #canvas-background {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
+            /* Blueprint background */
+            background-image:
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 2rem 2rem;
         }
 
         .hidden { display: none !important; }
@@ -58,9 +52,9 @@
             max-width: 42rem;
             margin: 0 auto;
             background-color: var(--card-bg-color);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            padding: 2rem 1.5rem 6rem 1.5rem;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 2rem 1.5rem 4rem 1.5rem;
             position: relative;
             min-height: 100vh;
             border-left: 1px solid var(--border-color);
@@ -71,8 +65,8 @@
             body { padding: 2rem 0; }
             .app-container {
                 min-height: auto;
-                border-radius: 1rem;
-                box-shadow: 0 0 30px rgba(212, 175, 55, 0.1);
+                border-radius: 0.5rem;
+                box-shadow: 0 0 30px rgba(0, 0, 0, 0.3);
                 border: 1px solid var(--border-color);
             }
         }
@@ -84,16 +78,56 @@
             width: 100%;
         }
 
-        .header { text-align: center; }
+        .header { text-align: center; margin-bottom: 1rem; }
+        
+        .scroll-header {
+            padding: 0.75rem 2rem;
+            margin: 0 auto;
+            position: relative;
+            display: inline-block;
+            box-shadow: 0 5px 15px rgba(66, 135, 245, 0.2);
+            background-color: var(--accent-color); /* Fallback */
+            background-image: 
+                /* Grid lines */
+                linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 1rem 1rem, 1rem 1rem; /* Size for each background layer */
+            background-position: center center, center center;
+        }
+
+        .scroll-header::before, .scroll-header::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            height: 100%;
+            width: 20px; /* Width of the scroll roll */
+            background-color: var(--accent-color);
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.3);
+        }
+
+        .scroll-header::before {
+            left: -20px;
+            border-top-left-radius: 10px;
+            border-bottom-left-radius: 10px;
+            border-right: 2px solid #2a6dcc;
+        }
+
+        .scroll-header::after {
+            right: -20px;
+            border-top-right-radius: 10px;
+            border-bottom-right-radius: 10px;
+            border-left: 2px solid #2a6dcc;
+        }
+
         .header h1 { 
-            font-family: 'Cinzel', serif;
-            font-size: 2.25rem; 
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.75rem; 
             font-weight: 700; 
             margin: 0; 
-            color: var(--accent-text-color);
-            text-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+            color: white;
+            letter-spacing: 1px;
+            text-transform: uppercase;
         }
-        .header p { color: var(--text-color-light); margin-top: 0.5rem; }
 
         .input-form { display: flex; gap: 0.5rem; }
         .input-field {
@@ -105,24 +139,21 @@
             background-color: var(--input-bg-color);
             color: var(--text-color);
         }
-        .input-field:focus { outline: 2px solid var(--button-bg-color); border-color: transparent; }
+        .input-field:focus { outline: 2px solid var(--accent-color); border-color: transparent; }
         .input-field:disabled { opacity: 0.7; }
 
         .calc-button {
             padding: 0.75rem 2rem;
             font-size: 1rem;
             font-weight: 600;
-            border: 1px solid var(--button-bg-color);
+            border: none;
             border-radius: 0.25rem;
-            background-color: transparent;
-            color: var(--button-bg-color);
-            cursor: pointer;
-            transition: background-color 0.2s ease, color 0.2s ease;
-        }
-        .calc-button:hover:not(:disabled) { 
-            background-color: var(--button-bg-color);
+            background-color: var(--accent-color);
             color: var(--button-text-color);
-         }
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .calc-button:hover:not(:disabled) { background-color: var(--button-hover-bg-color); }
         .calc-button:disabled { cursor: not-allowed; opacity: 0.5; }
         
         .error-message {
@@ -138,7 +169,7 @@
         .loader .spinner {
             width: 3rem; height: 3rem;
             border: 4px solid var(--border-color);
-            border-top-color: var(--button-bg-color);
+            border-top-color: var(--accent-color);
             border-radius: 50%;
             animation: spin 1s linear infinite;
             margin: auto;
@@ -156,54 +187,88 @@
             width: 100%;
             display: flex;
             justify-content: space-between;
+            align-items: center;
             padding: 1rem;
-            background-color: var(--accordion-bg-color);
+            background-color: var(--input-bg-color);
             border: none;
             cursor: pointer;
             text-align: left;
         }
         .accordion-button.expanded { background-color: var(--accordion-expanded-bg); }
-        .accordion-button .label { font-size: 0.75rem; color: var(--text-color-light); }
-        .accordion-button .value { font-size: 1.25rem; font-weight: 700; }
-        .accordion-button .value.original-number-value { color: var(--accent-text-color); }
+        
+        .accordion-header-content {
+            display: flex;
+            justify-content: space-between;
+            flex-grow: 1;
+        }
+        
+        .accordion-button .label { font-size: 0.875rem; color: var(--text-color-light); }
+        .accordion-button .value { font-size: 1.5rem; font-weight: 600; }
+        .accordion-button .value.original-number-value { color: var(--accent-color); }
         .accordion-button .core-value.no-core { color: var(--yellow-text); }
         .accordion-button .core-value.core-found { color: var(--green-text); }
-        .accordion-icon { transition: transform 0.2s; color: var(--accent-text-color); }
-        .accordion-button.expanded .accordion-icon { transform: rotate(180deg); }
+
+        .accordion-icon {
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-bottom: 8px solid var(--accent-color);
+            transition: transform 0.2s ease-in-out;
+            margin-left: 1.5rem;
+        }
+        .accordion-button:not(.expanded) .accordion-icon {
+            transform: rotate(180deg);
+        }
+
         .accordion-panel {
             padding: 1rem;
             display: flex;
             flex-direction: column;
             gap: 1rem;
+            border-top: 1px solid var(--border-color);
+            background-color: rgba(30, 58, 95, 0.4);
         }
-        .step-box { background-color: var(--bg-color); padding: 0.75rem; border-radius: 0.25rem; border: 1px solid var(--border-color); }
-        .step-box .label { font-size: 0.75rem; font-weight: 700; color: var(--text-color-light); }
-        .step-box .equation { font-family: monospace; background-color: var(--accordion-expanded-bg); padding: 0.5rem; border-radius: 0.25rem; margin-top: 0.5rem; color: var(--accent-text-color)}
+
+        .step-info {
+            color: var(--text-color-light);
+        }
+        
+        .step-equation-box { 
+            background-color: var(--input-bg-color); 
+            padding: 0.75rem; 
+            border-radius: 0.25rem; 
+            border: 1px solid var(--border-color); 
+            font-family: monospace;
+            color: var(--accent-color);
+            font-size: 1.125rem;
+        }
         
         .history-table-container { border: 1px solid var(--border-color); border-radius: 0.25rem; overflow-x: auto; background-color: var(--card-bg-color); }
         .history-table { width: 100%; border-collapse: collapse; }
         .history-table th, .history-table td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid var(--border-color); }
-        .history-table th { font-weight: 600; color: var(--text-color-light); font-family: 'Cinzel', serif; }
+        .history-table th { font-weight: 700; color: var(--text-color-light); font-family: 'Oswald', sans-serif; text-transform: uppercase; }
         .history-table tr:last-child td { border-bottom: none; }
         .history-table .delete-btn { background: none; border: none; color: var(--red-text); font-size: 1rem; cursor: pointer; padding: 0.25rem; border-radius: 9999px; }
         .history-table .delete-btn:hover { background-color: var(--accordion-bg-color); }
         .history-table .actions-cell { text-align: right; }
-        .history-table .input-cell { max-width: 120px; word-break: break-word; font-weight: 500; color: var(--accent-text-color); }
+        .history-table .input-cell { max-width: 120px; word-break: break-word; font-weight: 500; color: var(--accent-color); }
 
         .dynamic-island { position: fixed; bottom: 1.25rem; left: 50%; transform: translateX(-50%); z-index: 20; }
         .island-content { display: flex; gap: 1rem; background-color: var(--island-bg); padding: 0.5rem; border-radius: 9999px; box-shadow: 0 0 20px rgba(0,0,0,0.5); border: 1px solid var(--border-color)}
         .island-button { background: none; border: none; font-size: 1.25rem; padding: 0.75rem; border-radius: 50%; cursor: pointer; color: var(--island-icon-inactive); line-height: 0; }
-        .island-button.active { background-color: var(--accent-text-color); color: var(--button-text-color); }
+        .island-button.active { background-color: var(--accent-color); color: var(--button-text-color); }
     </style>
 </head>
 <body>
-    <canvas id="canvas-background"></canvas>
     
     <div class="app-container">
         
         <div id="calculator-view" class="calculator-view">
              <header class="header">
-                <h1>Numeric Core</h1>
+                <div class="scroll-header">
+                    <h1>NUMERIC CORE</h1>
+                </div>
             </header>
             <form id="input-form" class="input-form">
                 <input type="text" id="number-input" class="input-field" placeholder="e.g., 86455, 9876, 123" required>
@@ -216,7 +281,9 @@
 
         <div id="history-view" class="history-view hidden">
              <header class="header">
-                <h1>Calculation History</h1>
+                <div class="scroll-header">
+                    <h1>HISTORY</h1>
+                </div>
             </header>
             <div id="history-table-container" class="history-table-container"></div>
              <div id="no-history-message" class="hidden" style="text-align:center; padding: 2rem; color: var(--text-color-light);">
@@ -237,7 +304,6 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const dom = {
-                canvas: document.getElementById('canvas-background'),
                 calculatorView: document.getElementById('calculator-view'),
                 historyView: document.getElementById('history-view'),
                 inputForm: document.getElementById('input-form'),
@@ -254,80 +320,6 @@
 
             let history = [];
             let coreWorker;
-            
-            // --- CANVAS ANIMATION ---
-            const ctx = dom.canvas.getContext('2d');
-            let particles = [];
-            
-            function resizeCanvas() {
-                dom.canvas.width = window.innerWidth;
-                dom.canvas.height = window.innerHeight;
-            }
-            window.addEventListener('resize', resizeCanvas);
-            
-            class Particle {
-                constructor(x, y, size, speedX, speedY) {
-                    this.x = x; this.y = y; this.size = size;
-                    this.speedX = speedX; this.speedY = speedY;
-                }
-                update() {
-                    if (this.x > dom.canvas.width || this.x < 0) this.speedX = -this.speedX;
-                    if (this.y > dom.canvas.height || this.y < 0) this.speedY = -this.speedY;
-                    this.x += this.speedX; this.y += this.speedY;
-                }
-                draw() {
-                    const particleColor = getComputedStyle(document.documentElement).getPropertyValue('--canvas-particle-color').trim();
-                    ctx.fillStyle = particleColor.slice(1, -1);
-                    ctx.beginPath();
-                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-            }
-
-            function initParticles() {
-                particles = [];
-                const numberOfParticles = (dom.canvas.width * dom.canvas.height) / 12000;
-                for (let i = 0; i < numberOfParticles; i++) {
-                    const size = Math.random() * 2 + 1;
-                    const x = Math.random() * (innerWidth - size * 2) + size;
-                    const y = Math.random() * (innerHeight - size * 2) + size;
-                    const speedX = (Math.random() * 0.3) - 0.15;
-                    const speedY = (Math.random() * 0.3) - 0.15;
-                    particles.push(new Particle(x, y, size, speedX, speedY));
-                }
-            }
-
-            function connectParticles() {
-                 const particleColor = getComputedStyle(document.documentElement).getPropertyValue('--canvas-particle-color').trim();
-                 ctx.strokeStyle = particleColor.slice(1, -1);
-                 let opacityValue = 1;
-                 for (let a = 0; a < particles.length; a++) {
-                    for (let b = a; b < particles.length; b++) {
-                        const distance = ((particles[a].x - particles[b].x) * (particles[a].x - particles[b].x))
-                                      + ((particles[a].y - particles[b].y) * (particles[a].y - particles[b].y));
-                        if (distance < (dom.canvas.width/8) * (dom.canvas.height/8)) {
-                            opacityValue = 1 - (distance/20000);
-                            ctx.globalAlpha = opacityValue;
-                            ctx.beginPath();
-                            ctx.moveTo(particles[a].x, particles[a].y);
-                            ctx.lineTo(particles[b].x, particles[b].y);
-                            ctx.stroke();
-                        }
-                    }
-                }
-                ctx.globalAlpha = 1;
-            }
-
-            function animateCanvas() {
-                ctx.clearRect(0, 0, innerWidth, innerHeight);
-                particles.forEach(p => { p.update(); p.draw(); });
-                connectParticles();
-                requestAnimationFrame(animateCanvas);
-            }
-            
-            resizeCanvas();
-            initParticles();
-            animateCanvas();
             
             // --- VIEW ---
             const setView = (view) => {
@@ -421,18 +413,25 @@
                     const stepsHtml = isSimpleCore ? '' : `
                         <div class="accordion-panel">
                             ${result.steps.filter(s => !s.isFinal).map((step, idx) => `
-                                <div class="step-box">
-                                    <div class="label">STEP ${idx + 1}</div>
-                                    <div class="value">${step.number}</div>
-                                    <div class="equation">${step.equation}</div>
+                                <div>
+                                    <div class="step-info">STEP ${idx + 1} &ndash; ${step.number}</div>
+                                    <div class="step-equation-box">${step.equation}</div>
                                 </div>`).join('')}
                         </div>`;
                     return `
                         <div class="accordion-item">
-                            <button class="accordion-button">
-                                <div><div class="label">Original Number</div><div class="value original-number-value">${result.originalNumber}</div></div>
-                                <div style="text-align: right;"><div class="label">Numeric Core</div><div class="value core-value ${coreClass}">${result.finalCore}</div></div>
-                                ${isSimpleCore ? '<span></span>' : '<span class="accordion-icon">▼</span>'}
+                            <button class="accordion-button" ${isSimpleCore ? 'style="cursor: default;"' : ''}>
+                                <div class="accordion-header-content">
+                                    <div>
+                                        <div class="label">Original Number</div>
+                                        <div class="value original-number-value">${result.originalNumber}</div>
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <div class="label">Numeric Core</div>
+                                        <div class="value core-value ${coreClass}">${result.finalCore}</div>
+                                    </div>
+                                </div>
+                                <span class="accordion-icon" ${isSimpleCore ? 'style="visibility: hidden;"' : ''}></span>
                             </button>
                             ${stepsHtml}
                         </div>`;
@@ -440,9 +439,14 @@
                 document.querySelectorAll('.accordion-button').forEach(button => {
                     button.addEventListener('click', () => {
                         const panel = button.nextElementSibling;
-                        if (panel) { panel.classList.toggle('hidden'); button.classList.toggle('expanded'); }
+                        if (panel) { 
+                            panel.classList.toggle('hidden'); 
+                            button.classList.toggle('expanded'); 
+                        }
                     });
-                    if(button.nextElementSibling) button.nextElementSibling.classList.add('hidden');
+                    if(button.nextElementSibling) {
+                        button.nextElementSibling.classList.add('hidden');
+                    }
                 });
             };
 
@@ -501,4 +505,3 @@
     </script>
 </body>
 </html>
-
