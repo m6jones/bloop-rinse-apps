@@ -3,48 +3,31 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Numeric Core Calculator</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>Numeric Core Calculator - Blue Prince Edition</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #f8fafc;
-            --card-bg-color: rgba(255, 255, 255, 0.8);
-            --text-color: #1e293b;
-            --text-color-light: #64748b;
-            --border-color: #e2e8f0;
-            --button-bg-color: #3b82f6;
-            --button-text-color: #ffffff;
-            --button-hover-bg-color: #2563eb;
-            --input-bg-color: rgba(255, 255, 255, 0.7);
-            --input-border-color: #cbd5e1;
-            --accordion-bg-color: rgba(241, 245, 249, 0.8);
-            --accordion-expanded-bg: rgba(224, 242, 254, 0.9);
-            --island-bg: #1e293b;
-            --island-icon-inactive: #94a3b8;
-            --green-text: #166534;
-            --yellow-text: #854d0e;
-            --red-text: #991b1b;
-            --accent-text-color: #2563eb;
-            --canvas-particle-color: 'rgba(0, 100, 255, 0.5)';
-        }
-
-        [data-theme="dark"] {
-            --bg-color: #0f172a;
-            --card-bg-color: rgba(30, 41, 59, 0.8);
-            --text-color: #f8fafc;
-            --text-color-light: #94a3b8;
-            --border-color: #334155;
-            --button-hover-bg-color: #60a5fa;
-            --input-bg-color: rgba(15, 23, 42, 0.7);
-            --input-border-color: #475569;
-            --accordion-bg-color: rgba(51, 65, 85, 0.8);
-            --accordion-expanded-bg: rgba(12, 74, 110, 0.9);
-            --island-bg: #334155;
-            --green-text: #6ee7b7;
-            --yellow-text: #fde047;
-            --red-text: #fca5a5;
-            --accent-text-color: #60a5fa;
-            --canvas-particle-color: 'rgba(100, 200, 255, 0.6)';
+            --bg-color: #0A192F; /* Deep Navy Blue */
+            --card-bg-color: rgba(13, 37, 70, 0.75); /* Translucent Dark Blue */
+            --text-color: #E6F1FF; /* Light Steel Blue */
+            --text-color-light: #8892B0; /* Slate Blue */
+            --border-color: #243E5F; /* Lighter Navy */
+            --button-bg-color: #D4AF37; /* Old Gold */
+            --button-text-color: #0A192F;
+            --button-hover-bg-color: #EAC654; /* Brighter Gold */
+            --input-bg-color: rgba(10, 25, 47, 0.8);
+            --input-border-color: #243E5F;
+            --accordion-bg-color: rgba(13, 37, 70, 0.8);
+            --accordion-expanded-bg: rgba(18, 45, 85, 0.9);
+            --island-bg: #0A192F;
+            --island-icon-inactive: #8892B0;
+            --green-text: #6ee7b7; /* Kept for compatibility */
+            --yellow-text: #EAC654; /* Gold for warnings */
+            --red-text: #fca5a5;  /* Kept for compatibility */
+            --accent-text-color: #D4AF37;
+            --canvas-particle-color: 'rgba(212, 175, 55, 0.7)';
         }
 
         *, *::before, *::after { box-sizing: border-box; }
@@ -75,8 +58,8 @@
             max-width: 42rem;
             margin: 0 auto;
             background-color: var(--card-bg-color);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             padding: 2rem 1.5rem 6rem 1.5rem;
             position: relative;
             min-height: 100vh;
@@ -88,27 +71,12 @@
             body { padding: 2rem 0; }
             .app-container {
                 min-height: auto;
-                border-radius: 1.5rem;
-                box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+                border-radius: 1rem;
+                box-shadow: 0 0 30px rgba(212, 175, 55, 0.1);
                 border: 1px solid var(--border-color);
             }
         }
-
-        .theme-switcher {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 1.25rem;
-            color: var(--text-color-light);
-            padding: 0.5rem;
-            border-radius: 9999px;
-            z-index: 10;
-        }
-        .theme-switcher:hover { background-color: var(--accordion-bg-color); }
-
+        
         .calculator-view, .history-view {
             display: flex;
             flex-direction: column;
@@ -117,7 +85,14 @@
         }
 
         .header { text-align: center; }
-        .header h1 { font-size: 1.875rem; font-weight: 700; margin: 0; }
+        .header h1 { 
+            font-family: 'Cinzel', serif;
+            font-size: 2.25rem; 
+            font-weight: 700; 
+            margin: 0; 
+            color: var(--accent-text-color);
+            text-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+        }
         .header p { color: var(--text-color-light); margin-top: 0.5rem; }
 
         .input-form { display: flex; gap: 0.5rem; }
@@ -125,7 +100,7 @@
             flex-grow: 1;
             padding: 0.75rem 1rem;
             font-size: 1rem;
-            border-radius: 0.5rem;
+            border-radius: 0.25rem;
             border: 1px solid var(--input-border-color);
             background-color: var(--input-bg-color);
             color: var(--text-color);
@@ -137,24 +112,25 @@
             padding: 0.75rem 2rem;
             font-size: 1rem;
             font-weight: 600;
-            border: none;
-            border-radius: 0.5rem;
+            border: 1px solid var(--button-bg-color);
+            border-radius: 0.25rem;
+            background-color: transparent;
+            color: var(--button-bg-color);
+            cursor: pointer;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+        .calc-button:hover:not(:disabled) { 
             background-color: var(--button-bg-color);
             color: var(--button-text-color);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-        }
-        .calc-button:hover:not(:disabled) { background-color: var(--button-hover-bg-color); }
-        .calc-button:disabled { cursor: not-allowed; opacity: 0.7; }
+         }
+        .calc-button:disabled { cursor: not-allowed; opacity: 0.5; }
         
         .error-message {
-            background-color: var(--red-text);
-            color: white;
+            background-color: rgba(153, 27, 27, 0.5);
+            border: 1px solid var(--red-text);
+            color: var(--red-text);
             padding: 0.75rem 1rem;
-            border-radius: 0.5rem;
+            border-radius: 0.25rem;
             font-size: 0.875rem;
         }
 
@@ -171,10 +147,10 @@
 
         .results-accordion .accordion-item {
             border: 1px solid var(--border-color);
-            border-radius: 0.5rem;
+            border-radius: 0.25rem;
             margin-bottom: 0.5rem;
             overflow: hidden;
-            background-color: var(--card-bg-color);
+            background-color: transparent;
         }
         .accordion-button {
             width: 100%;
@@ -192,7 +168,7 @@
         .accordion-button .value.original-number-value { color: var(--accent-text-color); }
         .accordion-button .core-value.no-core { color: var(--yellow-text); }
         .accordion-button .core-value.core-found { color: var(--green-text); }
-        .accordion-icon { transition: transform 0.2s; }
+        .accordion-icon { transition: transform 0.2s; color: var(--accent-text-color); }
         .accordion-button.expanded .accordion-icon { transform: rotate(180deg); }
         .accordion-panel {
             padding: 1rem;
@@ -200,14 +176,14 @@
             flex-direction: column;
             gap: 1rem;
         }
-        .step-box { background-color: var(--bg-color); padding: 0.75rem; border-radius: 0.5rem; border: 1px solid var(--border-color); }
+        .step-box { background-color: var(--bg-color); padding: 0.75rem; border-radius: 0.25rem; border: 1px solid var(--border-color); }
         .step-box .label { font-size: 0.75rem; font-weight: 700; color: var(--text-color-light); }
-        .step-box .equation { font-family: monospace; background-color: var(--accordion-expanded-bg); padding: 0.5rem; border-radius: 0.25rem; margin-top: 0.5rem; }
+        .step-box .equation { font-family: monospace; background-color: var(--accordion-expanded-bg); padding: 0.5rem; border-radius: 0.25rem; margin-top: 0.5rem; color: var(--accent-text-color)}
         
-        .history-table-container { border: 1px solid var(--border-color); border-radius: 0.5rem; overflow-x: auto; background-color: var(--card-bg-color); }
+        .history-table-container { border: 1px solid var(--border-color); border-radius: 0.25rem; overflow-x: auto; background-color: var(--card-bg-color); }
         .history-table { width: 100%; border-collapse: collapse; }
         .history-table th, .history-table td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid var(--border-color); }
-        .history-table th { font-weight: 600; color: var(--text-color-light); }
+        .history-table th { font-weight: 600; color: var(--text-color-light); font-family: 'Cinzel', serif; }
         .history-table tr:last-child td { border-bottom: none; }
         .history-table .delete-btn { background: none; border: none; color: var(--red-text); font-size: 1rem; cursor: pointer; padding: 0.25rem; border-radius: 9999px; }
         .history-table .delete-btn:hover { background-color: var(--accordion-bg-color); }
@@ -215,24 +191,20 @@
         .history-table .input-cell { max-width: 120px; word-break: break-word; font-weight: 500; color: var(--accent-text-color); }
 
         .dynamic-island { position: fixed; bottom: 1.25rem; left: 50%; transform: translateX(-50%); z-index: 20; }
-        .island-content { display: flex; gap: 1rem; background-color: var(--island-bg); padding: 0.5rem; border-radius: 9999px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); }
+        .island-content { display: flex; gap: 1rem; background-color: var(--island-bg); padding: 0.5rem; border-radius: 9999px; box-shadow: 0 0 20px rgba(0,0,0,0.5); border: 1px solid var(--border-color)}
         .island-button { background: none; border: none; font-size: 1.25rem; padding: 0.75rem; border-radius: 50%; cursor: pointer; color: var(--island-icon-inactive); line-height: 0; }
-        .island-button.active { background-color: var(--button-bg-color); color: white; }
+        .island-button.active { background-color: var(--accent-text-color); color: var(--button-text-color); }
     </style>
 </head>
 <body>
     <canvas id="canvas-background"></canvas>
     
     <div class="app-container">
-        <button id="theme-switcher" class="theme-switcher" title="Toggle theme">
-            <span id="theme-icon-sun">☀️</span>
-            <span id="theme-icon-moon" class="hidden">🌙</span>
-        </button>
-
+        
         <div id="calculator-view" class="calculator-view">
              <header class="header">
-                <h1>Numeric Core Calculator</h1>
-                <p>Find the core of any number. Numbers under 4 digits are their own core.</p>
+                <h1>Numeric Core</h1>
+                <p>A "Blue Prince" Themed Calculator</p>
             </header>
             <form id="input-form" class="input-form">
                 <input type="text" id="number-input" class="input-field" placeholder="e.g., 86455, 9876, 123" required>
@@ -258,7 +230,7 @@
 
     <div class="dynamic-island">
         <div class="island-content">
-            <button id="island-btn-calc" class="island-button active" title="Calculator"><svg xmlns="http://www.w.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><line x1="16" y1="14" x2="8" y2="14"></line><line x1="12" y1="10" x2="12" y2="18"></line></svg></button>
+            <button id="island-btn-calc" class="island-button active" title="Calculator"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><line x1="16" y1="14" x2="8" y2="14"></line><line x1="12" y1="10" x2="12" y2="18"></line></svg></button>
             <button id="island-btn-history" class="island-button" title="History"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4v6h6"></path><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg></button>
         </div>
     </div>
@@ -267,9 +239,6 @@
         document.addEventListener('DOMContentLoaded', () => {
             const dom = {
                 canvas: document.getElementById('canvas-background'),
-                themeSwitcher: document.getElementById('theme-switcher'),
-                themeIconSun: document.getElementById('theme-icon-sun'),
-                themeIconMoon: document.getElementById('theme-icon-moon'),
                 calculatorView: document.getElementById('calculator-view'),
                 historyView: document.getElementById('history-view'),
                 inputForm: document.getElementById('input-form'),
@@ -290,7 +259,6 @@
             // --- CANVAS ANIMATION ---
             const ctx = dom.canvas.getContext('2d');
             let particles = [];
-            const mouse = { x: null, y: null };
             
             function resizeCanvas() {
                 dom.canvas.width = window.innerWidth;
@@ -298,15 +266,6 @@
             }
             window.addEventListener('resize', resizeCanvas);
             
-            window.addEventListener('mousemove', (event) => {
-                mouse.x = event.x;
-                mouse.y = event.y;
-            });
-            window.addEventListener('mouseout', () => {
-                mouse.x = null;
-                mouse.y = null;
-            });
-
             class Particle {
                 constructor(x, y, size, speedX, speedY) {
                     this.x = x; this.y = y; this.size = size;
@@ -319,7 +278,7 @@
                 }
                 draw() {
                     const particleColor = getComputedStyle(document.documentElement).getPropertyValue('--canvas-particle-color').trim();
-                    ctx.fillStyle = particleColor.slice(1, -1); // remove quotes
+                    ctx.fillStyle = particleColor.slice(1, -1);
                     ctx.beginPath();
                     ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
                     ctx.fill();
@@ -328,13 +287,13 @@
 
             function initParticles() {
                 particles = [];
-                const numberOfParticles = (dom.canvas.width * dom.canvas.height) / 9000;
+                const numberOfParticles = (dom.canvas.width * dom.canvas.height) / 12000;
                 for (let i = 0; i < numberOfParticles; i++) {
                     const size = Math.random() * 2 + 1;
                     const x = Math.random() * (innerWidth - size * 2) + size;
                     const y = Math.random() * (innerHeight - size * 2) + size;
-                    const speedX = (Math.random() * 0.4) - 0.2;
-                    const speedY = (Math.random() * 0.4) - 0.2;
+                    const speedX = (Math.random() * 0.3) - 0.15;
+                    const speedY = (Math.random() * 0.3) - 0.15;
                     particles.push(new Particle(x, y, size, speedX, speedY));
                 }
             }
@@ -347,7 +306,7 @@
                     for (let b = a; b < particles.length; b++) {
                         const distance = ((particles[a].x - particles[b].x) * (particles[a].x - particles[b].x))
                                       + ((particles[a].y - particles[b].y) * (particles[a].y - particles[b].y));
-                        if (distance < (dom.canvas.width/7) * (dom.canvas.height/7)) {
+                        if (distance < (dom.canvas.width/8) * (dom.canvas.height/8)) {
                             opacityValue = 1 - (distance/20000);
                             ctx.globalAlpha = opacityValue;
                             ctx.beginPath();
@@ -371,29 +330,6 @@
             initParticles();
             animateCanvas();
             
-            // --- THEME ---
-            const applyTheme = (theme) => {
-                if (theme === 'dark') {
-                    document.documentElement.setAttribute('data-theme', 'dark');
-                    dom.themeIconSun.classList.add('hidden');
-                    dom.themeIconMoon.classList.remove('hidden');
-                } else {
-                    document.documentElement.removeAttribute('data-theme');
-                    dom.themeIconSun.classList.remove('hidden');
-                    dom.themeIconMoon.classList.add('hidden');
-                }
-                localStorage.setItem('theme', theme);
-            };
-
-            dom.themeSwitcher.addEventListener('click', () => {
-                const newTheme = document.documentElement.hasAttribute('data-theme') ? 'light' : 'dark';
-                applyTheme(newTheme);
-            });
-            
-            const savedTheme = localStorage.getItem('theme');
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            applyTheme(savedTheme || (prefersDark ? 'dark' : 'light'));
-
             // --- VIEW ---
             const setView = (view) => {
                 if (view === 'calculator') {
@@ -518,7 +454,7 @@
             const saveToHistory = (results) => {
                 const newEntries = results.map(res => ({ id: Date.now() + Math.random(), input: res.originalNumber, core: res.finalCore }));
                 history.unshift(...newEntries);
-                if (history.length > 100) history.splice(100); // Limit history size
+                if (history.length > 100) history.splice(100);
                 saveHistory();
             };
 
@@ -552,7 +488,7 @@
                 dom.historyTableContainer.innerHTML = tableHtml;
                 document.querySelectorAll('.delete-btn').forEach(btn => {
                     btn.addEventListener('click', (e) => {
-                        const id = Number(e.currentTarget.dataset.id);
+                        const id = parseFloat(e.currentTarget.dataset.id);
                         deleteFromHistory(id);
                     });
                 });
