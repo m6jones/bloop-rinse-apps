@@ -277,6 +277,11 @@
         .history-table th, .history-table td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid var(--border-color); }
         .history-table th { font-weight: 700; color: var(--text-color-light); font-family: 'Oswald', sans-serif; text-transform: uppercase; }
         .history-table tr:last-child td { border-bottom: none; }
+        .history-table .date-cell {
+            color: var(--text-color-light);
+            white-space: nowrap;
+            font-size: 0.875rem;
+        }
         .history-table .delete-btn { background: none; border: none; color: var(--red-text); font-size: 1rem; cursor: pointer; padding: 0.25rem; border-radius: 9999px; }
         .history-table .delete-btn:hover { background-color: var(--accordion-bg-color); }
         .history-table .actions-cell { text-align: right; }
@@ -483,7 +488,12 @@
             const saveHistory = () => localStorage.setItem('numericCoreHistory', JSON.stringify(history));
 
             const saveToHistory = (results) => {
-                const newEntries = results.map(res => ({ id: Date.now() + Math.random(), input: res.originalNumber, core: res.finalCore }));
+                const newEntries = results.map(res => ({ 
+                    id: Date.now() + Math.random(), 
+                    timestamp: new Date().toISOString(),
+                    input: res.originalNumber, 
+                    core: res.finalCore 
+                }));
                 history.unshift(...newEntries);
                 if (history.length > 100) history.splice(100);
                 saveHistory();
@@ -504,16 +514,25 @@
                 dom.noHistoryMessage.classList.add('hidden');
                 const tableHtml = `
                     <table class="history-table">
-                        <thead><tr><th>Input</th><th>Core</th><th class="actions-cell">Actions</th></tr></thead>
+                        <thead><tr><th>Date</th><th>Input</th><th>Core</th><th class="actions-cell">Actions</th></tr></thead>
                         <tbody>
-                            ${history.map(item => `
+                            ${history.map(item => {
+                                let dateStr = '—';
+                                if (item.timestamp) {
+                                    dateStr = new Date(item.timestamp).toLocaleString(undefined, {
+                                        month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
+                                    });
+                                }
+                                return `
                                 <tr>
+                                    <td class="date-cell">${dateStr}</td>
                                     <td class="input-cell">${item.input}</td>
                                     <td>${item.core}</td>
                                     <td class="actions-cell">
                                         <button class="delete-btn" data-id="${item.id}" title="Delete"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
                                     </td>
-                                </tr>`).join('')}
+                                </tr>`;
+                            }).join('')}
                         </tbody>
                     </table>`;
                 dom.historyTableContainer.innerHTML = tableHtml;
@@ -533,4 +552,5 @@
     </script>
 </body>
 </html>
+
 
