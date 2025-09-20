@@ -192,6 +192,10 @@
             border-color: var(--border-color);
             background-color: var(--bg-color);
             cursor: grab;
+            aspect-ratio: 1 / 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
         .room-item-source:active { cursor: grabbing; transform: scale(0.95); }
 
@@ -333,6 +337,10 @@
                  <h2 class="text-lg font-semibold mt-6 mb-2" style="font-family: 'Oswald', sans-serif; color: var(--text-color);">Share Layout</h2>
                  <p class="text-sm text-text-color-light mb-4">Copy a shareable link of your current layout to your clipboard.</p>
                  <button id="share-btn" class="w-full btn btn-green">Copy Link</button>
+
+                 <h2 class="text-lg font-semibold mt-6 mb-2" style="font-family: 'Oswald', sans-serif; color: var(--text-color);">Reset Floor Plan</h2>
+                 <p class="text-sm text-text-color-light mb-4">Clear all rooms and restore the default layout.</p>
+                 <button id="clear-btn" class="w-full btn btn-red">Reset Floor Plan</button>
 
                  <!-- Saved Plans Section -->
                  <h2 class="text-lg font-semibold mt-6 mb-2" style="font-family: 'Oswald', sans-serif; color: var(--text-color);">Saved Plans</h2>
@@ -486,7 +494,7 @@
             const roomListContainer = document.getElementById('room-list');
             const resizableCanvas = document.getElementById('resizable-canvas');
             const shareBtn = document.getElementById('share-btn');
-            // const clearBtn = document.getElementById('clear-btn');
+            const clearBtn = document.getElementById('clear-btn');
             const tabButtons = document.querySelectorAll('.tab-btn');
             const tabContents = document.querySelectorAll('.tab-content');
             const contextMenu = document.getElementById('custom-context-menu');
@@ -562,7 +570,7 @@
                 const accordionWrapper = document.createElement('div');
                 accordionWrapper.className = 'mb-2 border border-border-color rounded-lg';
                 const header = document.createElement('button');
-                header.className = 'accordion-header w-full p-3 text-left font-semibold rounded-t-lg focus:outline-none flex justify-between items-center';
+                header.className = 'accordion-header w-full p-2 text-left font-semibold rounded-t-lg focus:outline-none flex justify-between items-center';
                 header.innerHTML = `<span>${type}</span><svg class="w-5 h-5 transition-transform transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>`;
                 const content = document.createElement('div');
                 content.className = 'accordion-content p-2 rounded-b-lg';
@@ -570,10 +578,10 @@
 
                 roomsByType[type].forEach(room => {
                     const roomEl = document.createElement('div');
-                    roomEl.className = 'room-item-source border rounded-lg p-1 text-center';
+                    roomEl.className = 'room-item-source border rounded-lg';
                     roomEl.draggable = true;
                     roomEl.dataset.roomName = room.name;
-                    roomEl.innerHTML = `<img src="${room.imagePath}" alt="${room.name}" class="mx-auto h-12 object-contain pointer-events-none"><span class="text-xs text-text-color-light block truncate">${room.name}</span>`;
+                    roomEl.innerHTML = `<div class="flex-grow min-h-0 flex items-center justify-center p-1"><img src="${room.imagePath}" alt="${room.name}" class="max-w-full max-h-full object-contain pointer-events-none"></div><span class="text-xs text-text-color-light block truncate flex-shrink-0 px-1 pb-1 text-center">${room.name}</span>`;
                     addDragListeners(roomEl);
                     content.appendChild(roomEl);
                 });
@@ -883,11 +891,11 @@
             
              // --- ACTION BUTTONS & STORAGE ---
             
-            // clearBtn.addEventListener('click', () => {
-            //     document.querySelectorAll('.grid-cell').forEach(cell => { cell.innerHTML = ''; });
-            //     loadDefaultLayout();
-            //     history.pushState({}, '', window.location.pathname);
-            // });
+            clearBtn.addEventListener('click', () => {
+                document.querySelectorAll('.grid-cell').forEach(cell => { cell.innerHTML = ''; });
+                loadDefaultLayout();
+                history.pushState({}, '', window.location.pathname);
+            });
 
             shareBtn.addEventListener('click', () => {
                 updateLayoutInMemory();
