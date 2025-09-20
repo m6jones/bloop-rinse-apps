@@ -5,213 +5,254 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Room Layout Planner</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
-        /* Custom Styles */
-        body {
-            font-family: 'Inter', sans-serif;
-            overscroll-behavior: none; /* Prevents pull-to-refresh on mobile */
+        /* --- BLUEPRINT THEME --- */
+        :root {
+            --bg-color: #0d1b2a; /* Deep Blueprint Blue */
+            --grid-color: rgba(66, 135, 245, 0.1);
+            --card-bg-color: rgba(23, 49, 79, 0.85); /* Translucent Dark Blue */
+            --text-color: #E6F1FF; /* Light Steel Blue */
+            --text-color-light: #8892B0; /* Slate Blue */
+            --border-color: #1e3a5f; /* Lighter Navy */
+            --accent-color: #4287f5; /* Bright Blueprint Blue */
+            --button-text-color: #ffffff;
+            --button-hover-bg-color: #649ff5;
+            --input-bg-color: rgba(13, 27, 42, 0.8);
+            --accordion-expanded-bg: rgba(30, 58, 95, 0.9);
+            --green-text: #6ee7b7;
+            --red-text: #fca5a5;
+            --btn-red-bg: #ef4444;
+            --btn-red-hover-bg: #dc2626;
+            --btn-green-bg: #22c55e;
+            --btn-green-hover-bg: #16a34a;
         }
 
-        /* Main layout: canvas on the left/top, side panel on the right/bottom */
-        #app-container {
-            display: flex;
-            flex-direction: column-reverse; /* Mobile first: panel below */
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            overscroll-behavior: none; /* Prevents pull-to-refresh */
         }
-        @media (min-width: 1024px) {
-            #app-container {
-                flex-direction: row; /* Desktop: panel on the side */
-            }
-        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: var(--bg-color); }
+        ::-webkit-scrollbar-thumb { background: var(--accent-color); border-radius: 5px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--button-hover-bg-color); }
+
+        /* --- LAYOUT --- */
+        #app-container { display: flex; flex-direction: column-reverse; height: 100vh; }
+        @media (min-width: 1024px) { #app-container { flex-direction: row; } }
 
         #main-canvas {
             flex-grow: 1;
             padding: 2rem;
-            background-color: #f0f4f8;
             display: flex;
             flex-direction: column;
             align-items: center;
-            overflow-y: auto; /* Allow canvas area to scroll if content is too tall */
+            overflow: auto;
+            /* New white background with gray grid */
+            background-color: #ffffff;
+            background-image:
+                linear-gradient(#e5e7eb 1px, transparent 1px),
+                linear-gradient(90deg, #e5e7eb 1px, transparent 1px);
+            background-size: 2rem 2rem;
         }
 
         #resizable-canvas {
             resize: both;
             overflow: auto;
-            border: 1px solid #a0aec0;
+            border: 1px solid var(--border-color);
             padding: 1rem;
             border-radius: 0.5rem;
-            width: 800px; /* Default width */
-            height: 90vh; /* Default height */
-            min-width: 340px; /* Prevent collapsing too small */
+            width: 800px;
+            height: 90vh;
+            min-width: 340px;
             min-height: 340px;
-            display: flex; /* Changed from grid */
+            display: flex;
             gap: 4px;
         }
 
-        #left-column {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
+        #left-column { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+        #grid-container { flex: 5; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; min-height: 0; }
+
+        /* --- THEMED COMPONENTS --- */
+        .grid-cell {
+            background-color: #f8fafc; /* Lighter cell background for contrast */
+            aspect-ratio: 1 / 1;
+            border: 2px dashed #d1d5db; /* Gray border */
+            border-radius: 8px;
+            transition: background-color 0.2s, border-color 0.2s;
+            position: relative;
         }
+        .grid-cell.drag-over {
+            background-color: rgba(66, 135, 245, 0.2);
+            border-color: var(--accent-color);
+        }
+        #extra-space .grid-cell { border-style: solid; }
         
         #delete-zone {
             flex-grow: 1;
-            border: 2px dashed #f56565;
+            border: 2px dashed var(--btn-red-bg);
             border-radius: 8px;
             display: none; /* Initially hidden */
             align-items: center;
             justify-content: center;
             text-align: center;
-            color: #c53030;
+            color: var(--btn-red-bg); /* Darker red for readability */
             font-size: 0.9rem;
             transition: all 0.2s;
         }
-        
         #delete-zone.drag-over-delete {
-            background-color: #fed7d7;
-            border-color: #c53030;
+            background-color: rgba(239, 68, 68, 0.1);
+            border-color: var(--btn-red-hover-bg);
             border-style: solid;
             font-weight: 600;
-        }
-        
-        #grid-container {
-            flex: 5; /* Takes up the remaining space */
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 4px;
-            min-height: 0; /* Fix for flexbox shrinking */
-        }
-
-        .grid-cell {
-            background-color: #cbd5e1;
-            aspect-ratio: 1 / 1; /* Force 1:1 aspect ratio */
-            border: 2px dashed #94a3b8;
-            border-radius: 8px;
-            transition: background-color 0.2s, border-color 0.2s;
-            position: relative;
-        }
-        
-        .grid-cell.drag-over {
-            background-color: #99f6e4;
-            border-color: #14b8a6;
-        }
-        
-        #extra-space .grid-cell {
-             border-style: solid;
         }
 
         #side-panel {
             width: 100%;
-            max-height: 50vh; /* Limit height on mobile */
-            background-color: #ffffff;
-            border-top: 1px solid #e2e8f0;
+            max-height: 50vh;
+            background-color: var(--card-bg-color);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-top: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
         }
         @media (min-width: 1024px) {
             #side-panel {
-                width: 384px; /* Fixed width on desktop */
+                width: 384px;
                 flex-shrink: 0;
                 max-height: 100vh;
                 border-top: none;
-                border-left: 1px solid #e2e8f0;
+                border-left: 1px solid var(--border-color);
             }
         }
 
-        .room-item-source {
-            cursor: grab;
-            transition: transform 0.2s;
-        }
-        .room-item-source:active {
-            cursor: grabbing;
-            transform: scale(0.95);
-        }
-
-        /* Ghost element for touch dragging */
-        #touch-ghost {
-            position: absolute;
-            pointer-events: none;
-            opacity: 0.8;
-            z-index: 1000;
-            transform: translate(-50%, -50%); /* Center on finger */
-            transition: opacity 0.2s;
-        }
-
-        /* Placed room item on the grid */
-        .placed-room {
-            width: 100%;
-            height: 100%;
+        .scroll-header {
+            padding: 0.75rem 2rem;
+            margin: 0 auto;
             position: relative;
-            user-select: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: grab;
+            display: inline-block;
+            box-shadow: 0 5px 15px rgba(66, 135, 245, 0.2);
+            background-color: var(--accent-color);
+            background-image: 
+              linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 1rem 1rem;
+            background-position: center center;
         }
-        .placed-room:active {
-            cursor: grabbing;
+        .scroll-header::before, .scroll-header::after {
+            content: ''; position: absolute; top: 0; height: 100%; width: 20px;
+            background-color: var(--accent-color); box-shadow: inset 0 0 5px rgba(0,0,0,0.3);
         }
-        .placed-room img {
-            max-width: 100%;
-            max-height: 100%;
-            pointer-events: none; /* Allows clicks to pass through to buttons */
-            transition: transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+        .scroll-header::before { left: -20px; border-top-left-radius: 10px; border-bottom-left-radius: 10px; border-right: 2px solid #2a6dcc; }
+        .scroll-header::after { right: -20px; border-top-right-radius: 10px; border-bottom-right-radius: 10px; border-left: 2px solid #2a6dcc; }
+        .scroll-header h1 { 
+            font-family: 'Oswald', sans-serif; font-size: 1.75rem; font-weight: 700; margin: 0; 
+            color: white; letter-spacing: 1px; text-transform: uppercase;
         }
-        .placed-room .rotate-btn {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            background-color: rgba(0, 0, 0, 0.6);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 32px;
-            height: 32px;
-            font-size: 1.2rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            transition: opacity 0.2s;
-            z-index: 10;
-        }
-        .placed-room:hover .rotate-btn {
-            opacity: 1;
-        }
-        .placed-room .rotate-left { left: -10px; }
-        .placed-room .rotate-right { right: -10px; }
 
-        /* Accordion styles */
+        .tab-btn {
+            background-color: var(--input-bg-color);
+            border-bottom: 2px solid transparent;
+            color: var(--text-color-light);
+            transition: all 0.2s;
+        }
+        .tab-btn.active {
+            font-weight: 600;
+            color: var(--text-color);
+            border-bottom-color: var(--accent-color);
+            background-color: var(--bg-color);
+        }
+        
+        .accordion-header {
+            background-color: var(--input-bg-color);
+            color: var(--text-color);
+        }
+        .accordion-header:hover { background-color: var(--border-color); }
         .accordion-content {
+            background-color: transparent;
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 0.5rem;
             overflow: hidden;
             transition: max-height 0.3s ease-in-out;
         }
+        .room-item-source {
+            border-color: var(--border-color);
+            background-color: var(--bg-color);
+            cursor: grab;
+        }
+        .room-item-source:active { cursor: grabbing; transform: scale(0.95); }
 
-        /* Tab Styles */
-        .tab-btn {
-            background-color: #f7fafc;
-            border-bottom: 2px solid transparent;
-            transition: all 0.2s;
+        .btn {
+            padding: 0.5rem 1rem; font-weight: 600; border: none; border-radius: 0.25rem;
+            color: var(--button-text-color); cursor: pointer; transition: background-color 0.2s ease;
+            text-align: center; display: inline-block;
         }
-        .tab-btn.active {
-            font-weight: 600;
-            color: #2d3748;
-            border-bottom-color: #3182ce;
-            background-color: white;
+        .btn-blue { background-color: var(--accent-color); }
+        .btn-blue:hover { background-color: var(--button-hover-bg-color); }
+        .btn-red { background-color: var(--btn-red-bg); }
+        .btn-red:hover { background-color: var(--btn-red-hover-bg); }
+        .btn-green { background-color: var(--btn-green-bg); }
+        .btn-green:hover { background-color: var(--btn-green-hover-bg); }
+        .btn-indigo { background-color: #4f46e5; }
+
+        #custom-context-menu {
+            background-color: var(--card-bg-color);
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(10px);
         }
-        .tab-content.hidden {
-            display: none;
+        #custom-context-menu button {
+            color: var(--text-color);
+        }
+        #custom-context-menu button:hover {
+            background-color: var(--accordion-expanded-bg);
+        }
+        #custom-context-menu button[data-action="delete"] {
+            color: var(--red-text);
+        }
+        #custom-context-menu button[data-action="delete"]:hover {
+            background-color: rgba(239, 68, 68, 0.1);
         }
 
+        #touch-ghost {
+            position: absolute; pointer-events: none; opacity: 0.8; z-index: 1000;
+            transform: translate(-50%, -50%); transition: opacity 0.2s;
+        }
+
+        .placed-room {
+            width: 100%; height: 100%; position: relative; user-select: none;
+            display: flex; align-items: center; justify-content: center; cursor: grab;
+        }
+        .placed-room:active { cursor: grabbing; }
+        .placed-room img {
+            max-width: 100%; max-height: 100%; pointer-events: none;
+            transition: transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+        }
+        .placed-room .rotate-btn {
+            position: absolute; top: 50%; transform: translateY(-50%); background-color: rgba(0, 0, 0, 0.6);
+            color: white; border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 1.2rem;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity 0.2s; z-index: 10;
+        }
+        .placed-room:hover .rotate-btn { opacity: 1; }
+        .placed-room .rotate-left { left: -10px; }
+        .placed-room .rotate-right { right: -10px; }
+        .hidden { display: none !important; }
     </style>
 </head>
-<body class="bg-gray-100">
+<body>
 
-    <div id="app-container" class="h-screen">
+    <div id="app-container">
         <!-- Main Canvas Area -->
         <main id="main-canvas">
             <div id="resizable-canvas">
@@ -229,14 +270,16 @@
         </main>
 
         <!-- Side Panel -->
-        <aside id="side-panel" class="shadow-lg">
-            <div class="p-4 sticky top-0 bg-white z-10 border-b flex-shrink-0">
-                <h1 class="text-2xl font-bold text-gray-800">Layout Planner</h1>
+        <aside id="side-panel">
+             <div class="p-4 sticky top-0 bg-transparent z-10 border-b border-transparent text-center">
+                <div class="scroll-header">
+                     <h1>Layout Planner</h1>
+                </div>
             </div>
             <!-- Tabs -->
-            <div class="flex border-b flex-shrink-0">
-                <button class="tab-btn active flex-1 py-2 px-4 text-center text-gray-600" data-tab="rooms">Rooms</button>
-                <button class="tab-btn flex-1 py-2 px-4 text-center text-gray-600" data-tab="options">Options</button>
+            <div class="flex border-b border-border-color flex-shrink-0">
+                <button class="tab-btn active flex-1 py-2 px-4 text-center" data-tab="rooms">Rooms</button>
+                <button class="tab-btn flex-1 py-2 px-4 text-center" data-tab="options">Options</button>
             </div>
 
             <!-- Tab Content -->
@@ -244,33 +287,33 @@
                 <!-- Room accordions will be generated here -->
             </div>
             <div id="options-content" class="p-4 tab-content hidden overflow-y-auto flex-grow min-h-0">
-                 <h2 class="text-lg font-semibold mb-2">Canvas Options</h2>
-                 <p class="text-sm text-gray-600 mb-4">Reset the canvas container to its default size.</p>
-                 <button id="reset-size-btn" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 transition-colors">Reset Size</button>
+                 <h2 class="text-lg font-semibold mb-2" style="font-family: 'Oswald', sans-serif; color: var(--text-color);">Canvas Options</h2>
+                 <p class="text-sm text-text-color-light mb-4">Reset the canvas container to its default size.</p>
+                 <button id="reset-size-btn" class="w-full btn btn-blue">Reset Size</button>
 
-                 <h2 class="text-lg font-semibold mt-6 mb-2">Clear Layout</h2>
-                 <p class="text-sm text-gray-600 mb-4">Remove all rooms and reset the board to the default layout.</p>
-                 <button id="clear-btn" class="w-full px-4 py-2 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-75 transition-colors">Clear and Reset</button>
+                 <h2 class="text-lg font-semibold mt-6 mb-2" style="font-family: 'Oswald', sans-serif; color: var(--text-color);">Clear Layout</h2>
+                 <p class="text-sm text-text-color-light mb-4">Remove all rooms and reset the board to the default layout.</p>
+                 <button id="clear-btn" class="w-full btn btn-red">Clear and Reset</button>
 
-                 <h2 class="text-lg font-semibold mt-6 mb-2">Share Layout</h2>
-                 <p class="text-sm text-gray-600 mb-4">Copy a shareable link of your current layout to your clipboard.</p>
-                 <button id="share-btn" class="w-full px-4 py-2 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-75 transition-colors">Copy Link</button>
+                 <h2 class="text-lg font-semibold mt-6 mb-2" style="font-family: 'Oswald', sans-serif; color: var(--text-color);">Share Layout</h2>
+                 <p class="text-sm text-text-color-light mb-4">Copy a shareable link of your current layout to your clipboard.</p>
+                 <button id="share-btn" class="w-full btn btn-green">Copy Link</button>
             </div>
         </aside>
     </div>
 
     <!-- Custom Right-Click Context Menu -->
-    <div id="custom-context-menu" class="hidden absolute bg-white border border-gray-300 rounded-lg shadow-xl py-2 z-50 w-40">
-        <button data-action="rotate-left" class="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+    <div id="custom-context-menu" class="hidden absolute rounded-lg shadow-xl py-2 z-50 w-40">
+        <button data-action="rotate-left" class="flex items-center gap-2 w-full text-left px-4 py-2 text-sm">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-counterclockwise" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 3a5 5 0 1 1-4.546 2.914.5.5 0 0 0-.908-.417A6 6 0 1 0 8 2z"/><path d="M8 4.466V.534a.25.25 0 0 0-.41-.192L5.23 2.308a.25.25 0 0 0 0 .384l2.36 1.966A.25.25 0 0 0 8 4.466"/></svg>
             Rotate Left
         </button>
-        <button data-action="rotate-right" class="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+        <button data-action="rotate-right" class="flex items-center gap-2 w-full text-left px-4 py-2 text-sm">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-clockwise" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/><path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/></svg>
             Rotate Right
         </button>
-        <div class="border-t my-1"></div>
-        <button data-action="delete" class="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+        <div class="border-t my-1" style="border-color: var(--border-color);"></div>
+        <button data-action="delete" class="flex items-center gap-2 w-full text-left px-4 py-2 text-sm">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/><path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/></svg>
             Delete Room
         </button>
@@ -439,22 +482,22 @@
             // Generate the side panel with accordions
             Object.keys(roomsByType).sort().forEach(type => {
                 const accordionWrapper = document.createElement('div');
-                accordionWrapper.className = 'mb-2 border rounded-lg';
+                accordionWrapper.className = 'mb-2 border border-border-color rounded-lg';
 
                 const header = document.createElement('button');
-                header.className = 'w-full p-3 text-left font-semibold bg-gray-100 hover:bg-gray-200 rounded-t-lg focus:outline-none flex justify-between items-center';
+                header.className = 'accordion-header w-full p-3 text-left font-semibold rounded-t-lg focus:outline-none flex justify-between items-center';
                 header.innerHTML = `<span>${type}</span><svg class="w-5 h-5 transition-transform transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>`;
                 
                 const content = document.createElement('div');
-                content.className = 'accordion-content p-2 bg-white rounded-b-lg';
+                content.className = 'accordion-content p-2 rounded-b-lg';
                 content.style.maxHeight = '0px';
 
                 roomsByType[type].forEach(room => {
                     const roomEl = document.createElement('div');
-                    roomEl.className = 'room-item-source border rounded-lg p-1 text-center bg-gray-50';
+                    roomEl.className = 'room-item-source border rounded-lg p-1 text-center';
                     roomEl.draggable = true;
                     roomEl.dataset.roomName = room.name;
-                    roomEl.innerHTML = `<img src="${room.imagePath}" alt="${room.name}" class="mx-auto h-20 object-contain pointer-events-none"><span class="text-xs text-gray-700">${room.name}</span>`;
+                    roomEl.innerHTML = `<img src="${room.imagePath}" alt="${room.name}" class="mx-auto h-20 object-contain pointer-events-none"><span class="text-xs text-text-color-light">${room.name}</span>`;
                     addDragListeners(roomEl);
                     content.appendChild(roomEl);
                 });
@@ -481,11 +524,8 @@
             // --- Tab Logic ---
             tabButtons.forEach(button => {
                 button.addEventListener('click', () => {
-                    // Deactivate all
                     tabButtons.forEach(btn => btn.classList.remove('active'));
                     tabContents.forEach(content => content.classList.add('hidden'));
-
-                    // Activate clicked
                     button.classList.add('active');
                     const tabName = button.dataset.tab;
                     const contentToShow = document.getElementById(tabName === 'rooms' ? 'room-list' : 'options-content');
@@ -495,65 +535,46 @@
 
 
             // --- Canvas Resizing Logic ---
-
             function applySavedSize() {
                 const savedWidth = localStorage.getItem('canvasWidth');
                 const savedHeight = localStorage.getItem('canvasHeight');
-
                 if (savedWidth && savedHeight) {
                     resizableCanvas.style.width = savedWidth;
                     resizableCanvas.style.height = savedHeight;
                 }
             }
-
             function resetSize() {
                 localStorage.removeItem('canvasWidth');
                 localStorage.removeItem('canvasHeight');
                 resizableCanvas.style.width = ''; // Resets to CSS default
                 resizableCanvas.style.height = ''; // Resets to CSS default
             }
-
             resetSizeBtn.addEventListener('click', resetSize);
-
-            // Use ResizeObserver to save new dimensions on resize
             const resizeObserver = new ResizeObserver(entries => {
                 window.requestAnimationFrame(() => {
-                    if (!Array.isArray(entries) || !entries.length) {
-                        return;
-                    }
+                    if (!Array.isArray(entries) || !entries.length) return;
                     const entry = entries[0];
-                    const newWidth = `${entry.contentRect.width}px`;
-                    const newHeight = `${entry.contentRect.height}px`;
-                    localStorage.setItem('canvasWidth', newWidth);
-                    localStorage.setItem('canvasHeight', newHeight);
+                    localStorage.setItem('canvasWidth', `${entry.contentRect.width}px`);
+                    localStorage.setItem('canvasHeight', `${entry.contentRect.height}px`);
                 });
             });
-
             resizeObserver.observe(resizableCanvas);
-
-            // Apply any saved size on initial load
             applySavedSize();
 
-
             // --- DRAG & DROP LOGIC (Mouse & Touch) ---
-
             let touchGhost = null;
             let draggedRoomName = null;
             let currentDropTarget = null;
-            let draggedFromGridInfo = null; // Holds info if dragging from the grid: { roomName, rotation, originCell }
+            let draggedFromGridInfo = null; // { roomName, rotation, originCell }
             
             function addDragListeners(el) {
-                // Mouse drag events
                 el.addEventListener('dragstart', (e) => {
                     e.dataTransfer.setData('text/plain', el.dataset.roomName);
                     draggedRoomName = el.dataset.roomName;
                 });
-
-                // Touch drag events
                 el.addEventListener('touchstart', (e) => {
                     e.preventDefault();
                     draggedRoomName = el.dataset.roomName;
-                    
                     if (!touchGhost) {
                         const roomInfo = roomData.find(r => r.name === draggedRoomName);
                         touchGhost = document.createElement('img');
@@ -575,41 +596,31 @@
 
             document.addEventListener('touchend', (e) => {
                 if (!touchGhost) return;
-
-                // --- Handle drop logic (for both grid move and new room) ---
-                if (draggedFromGridInfo) { // Logic for moving an existing room
+                if (draggedFromGridInfo) {
                     const originCell = draggedFromGridInfo.originCell;
                     const originPlacedRoom = originCell.querySelector('.placed-room');
                     if(originPlacedRoom) originPlacedRoom.style.opacity = '1';
 
                     if (currentDropTarget) {
                         if (currentDropTarget.id === 'delete-zone') {
-                            originCell.innerHTML = ''; // Delete from origin
+                            originCell.innerHTML = '';
                             updateLayoutInMemory();
                         } else if (currentDropTarget.classList.contains('grid-cell') && originCell.dataset.id !== currentDropTarget.dataset.id) {
-                            originCell.innerHTML = ''; // Clear origin
+                            originCell.innerHTML = '';
                             placeRoom(currentDropTarget, draggedFromGridInfo.roomName, draggedFromGridInfo.rotation);
                         }
                     }
-                    deleteZone.style.display = 'none'; // Hide delete zone
+                    deleteZone.style.display = 'none';
                     draggedFromGridInfo = null;
-
-                } else if (draggedRoomName) { // Logic for placing a new room from the panel
+                } else if (draggedRoomName) {
                     if (currentDropTarget && currentDropTarget.classList.contains('grid-cell')) {
                         placeRoom(currentDropTarget, draggedRoomName);
                     }
                 }
-                
-                // --- General cleanup ---
-                if(currentDropTarget) {
-                    currentDropTarget.classList.remove('drag-over', 'drag-over-delete');
-                }
-
+                if(currentDropTarget) currentDropTarget.classList.remove('drag-over', 'drag-over-delete');
                 touchGhost.style.opacity = '0';
                 setTimeout(() => {
-                    if (touchGhost && touchGhost.parentNode) {
-                        touchGhost.parentNode.removeChild(touchGhost);
-                    }
+                    if (touchGhost && touchGhost.parentNode) touchGhost.parentNode.removeChild(touchGhost);
                     touchGhost = null;
                     draggedRoomName = null;
                     currentDropTarget = null;
@@ -619,17 +630,13 @@
             function updateGhostPosition(touch) {
                 touchGhost.style.left = `${touch.clientX}px`;
                 touchGhost.style.top = `${touch.clientY}px`;
-                
                 touchGhost.style.display = 'none';
                 const elementUnder = document.elementFromPoint(touch.clientX, touch.clientY);
                 touchGhost.style.display = 'block';
-
                 if (currentDropTarget && currentDropTarget !== elementUnder) {
                     currentDropTarget.classList.remove('drag-over', 'drag-over-delete');
                 }
-                
                 const dropTarget = elementUnder ? elementUnder.closest('.grid-cell, #delete-zone') : null;
-
                 if (dropTarget) {
                     currentDropTarget = dropTarget;
                     const overClass = currentDropTarget.id === 'delete-zone' ? 'drag-over-delete' : 'drag-over';
@@ -639,41 +646,27 @@
                 }
             }
 
-
             function addDropListeners(cell) {
-                cell.addEventListener('dragover', (e) => {
-                    e.preventDefault();
-                    cell.classList.add('drag-over');
-                });
-                cell.addEventListener('dragleave', () => {
-                    cell.classList.remove('drag-over');
-                });
+                cell.addEventListener('dragover', (e) => { e.preventDefault(); cell.classList.add('drag-over'); });
+                cell.addEventListener('dragleave', () => cell.classList.remove('drag-over'));
                 cell.addEventListener('drop', (e) => {
                     e.preventDefault();
                     cell.classList.remove('drag-over');
-
-                    // Check for moving a room from the grid
                     const movedRoomDataString = e.dataTransfer.getData('text/room-from-grid');
                     if (movedRoomDataString) {
                         const data = JSON.parse(movedRoomDataString);
-                        if (data.originId === cell.dataset.id) return; // Dropped on itself
-
+                        if (data.originId === cell.dataset.id) return;
                         const originCell = document.querySelector(`[data-id='${data.originId}']`);
                         if (originCell) originCell.innerHTML = '';
-                        
                         placeRoom(cell, data.roomName, parseInt(data.rotation, 10));
-
-                    } else { // It's a new room from the side panel
+                    } else {
                         const roomName = e.dataTransfer.getData('text/plain');
                         placeRoom(cell, roomName);
                     }
                 });
-                
-                // Add right-click listener
                 cell.addEventListener('contextmenu', (e) => {
                     e.preventDefault();
-                    const placedRoom = cell.querySelector('.placed-room');
-                    if (placedRoom) {
+                    if (cell.querySelector('.placed-room')) {
                         currentContextMenuCell = cell;
                         contextMenu.style.top = `${e.clientY}px`;
                         contextMenu.style.left = `${e.clientX}px`;
@@ -683,74 +676,52 @@
             }
 
             // --- PLACEMENT & ROTATION LOGIC ---
-
             function placeRoom(cell, roomName, rotation = 0) {
                 const roomInfo = roomData.find(r => r.name === roomName);
                 if (!roomInfo) return;
-
-                cell.innerHTML = ''; // Clear previous content
-
+                cell.innerHTML = '';
                 const placedRoom = document.createElement('div');
                 placedRoom.className = 'placed-room';
                 placedRoom.dataset.roomName = roomName;
                 placedRoom.dataset.rotation = rotation;
                 placedRoom.draggable = true;
-
                 const img = document.createElement('img');
                 img.src = roomInfo.imagePath;
                 img.alt = roomInfo.name;
                 img.style.transform = `rotate(${rotation}deg)`;
-                
                 const rotateLeftBtn = document.createElement('button');
                 rotateLeftBtn.innerHTML = '&#8634;';
                 rotateLeftBtn.className = 'rotate-btn rotate-left';
                 rotateLeftBtn.onclick = (e) => { e.stopPropagation(); handleRotate(placedRoom, -90); };
-
                 const rotateRightBtn = document.createElement('button');
                 rotateRightBtn.innerHTML = '&#8635;';
                 rotateRightBtn.className = 'rotate-btn rotate-right';
                 rotateRightBtn.onclick = (e) => { e.stopPropagation(); handleRotate(placedRoom, 90); };
-
                 placedRoom.appendChild(rotateLeftBtn);
                 placedRoom.appendChild(img);
                 placedRoom.appendChild(rotateRightBtn);
                 cell.appendChild(placedRoom);
-                
                 addPlacedRoomDragListeners(placedRoom, cell);
                 updateLayoutInMemory();
             }
 
             function addPlacedRoomDragListeners(placedRoom, originCell) {
-                // For Mouse Drag
                 placedRoom.addEventListener('dragstart', (e) => {
                     e.stopPropagation();
-                    deleteZone.style.display = 'flex'; // Show delete zone
-                    const roomDragData = {
-                        roomName: placedRoom.dataset.roomName,
-                        rotation: placedRoom.dataset.rotation,
-                        originId: originCell.dataset.id
-                    };
+                    deleteZone.style.display = 'flex';
+                    const roomDragData = { roomName: placedRoom.dataset.roomName, rotation: placedRoom.dataset.rotation, originId: originCell.dataset.id };
                     e.dataTransfer.setData('text/room-from-grid', JSON.stringify(roomDragData));
                     setTimeout(() => placedRoom.style.opacity = '0.5', 0);
                 });
-
                 placedRoom.addEventListener('dragend', (e) => {
                     placedRoom.style.opacity = '1';
-                    deleteZone.style.display = 'none'; // Hide delete zone
+                    deleteZone.style.display = 'none';
                 });
-
-                // For Touch Drag
                 placedRoom.addEventListener('touchstart', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    deleteZone.style.display = 'flex'; // Show delete zone
-
-                    draggedFromGridInfo = {
-                        roomName: placedRoom.dataset.roomName,
-                        rotation: parseInt(placedRoom.dataset.rotation, 10),
-                        originCell: originCell
-                    };
-
+                    deleteZone.style.display = 'flex';
+                    draggedFromGridInfo = { roomName: placedRoom.dataset.roomName, rotation: parseInt(placedRoom.dataset.rotation, 10), originCell: originCell };
                     if (!touchGhost) {
                         touchGhost = document.createElement('img');
                         touchGhost.id = 'touch-ghost';
@@ -767,24 +738,16 @@
 
             function handleRotate(placedRoom, angle) {
                 const img = placedRoom.querySelector('img');
-                let currentRotation = parseInt(placedRoom.dataset.rotation || '0', 10);
-                currentRotation = (currentRotation + angle + 360) % 360;
+                let currentRotation = (parseInt(placedRoom.dataset.rotation || '0', 10) + angle + 360) % 360;
                 placedRoom.dataset.rotation = currentRotation;
                 img.style.transform = `rotate(${currentRotation}deg)`;
                 updateLayoutInMemory();
             }
 
-            // --- DELETE ZONE LOGIC ---
+            // --- DELETE ZONE & CONTEXT MENU ---
             function addDeleteZoneListeners(zone) {
-                zone.addEventListener('dragover', (e) => {
-                    if (e.dataTransfer.types.includes('text/room-from-grid')) {
-                        e.preventDefault();
-                        zone.classList.add('drag-over-delete');
-                    }
-                });
-                zone.addEventListener('dragleave', () => {
-                    zone.classList.remove('drag-over-delete');
-                });
+                zone.addEventListener('dragover', (e) => { if (e.dataTransfer.types.includes('text/room-from-grid')) { e.preventDefault(); zone.classList.add('drag-over-delete'); } });
+                zone.addEventListener('dragleave', () => zone.classList.remove('drag-over-delete'));
                 zone.addEventListener('drop', (e) => {
                     e.preventDefault();
                     zone.classList.remove('drag-over-delete');
@@ -792,77 +755,50 @@
                     if (movedRoomDataString) {
                         const data = JSON.parse(movedRoomDataString);
                         const originCell = document.querySelector(`[data-id='${data.originId}']`);
-                        if (originCell) {
-                            originCell.innerHTML = '';
-                            updateLayoutInMemory();
-                        }
+                        if (originCell) { originCell.innerHTML = ''; updateLayoutInMemory(); }
                     }
                 });
             }
 
-            // --- CONTEXT MENU LOGIC ---
-            function hideContextMenu() {
-                contextMenu.classList.add('hidden');
-                currentContextMenuCell = null;
-            }
-
+            function hideContextMenu() { contextMenu.classList.add('hidden'); currentContextMenuCell = null; }
             contextMenu.addEventListener('click', (e) => {
                 if (!currentContextMenuCell) return;
-
                 const action = e.target.closest('button').dataset.action;
                 const placedRoom = currentContextMenuCell.querySelector('.placed-room');
-
-                if (action === 'delete') {
-                    currentContextMenuCell.innerHTML = '';
-                    updateLayoutInMemory();
-                } else if (action === 'rotate-left' && placedRoom) {
-                    handleRotate(placedRoom, -90);
-                } else if (action === 'rotate-right' && placedRoom) {
-                    handleRotate(placedRoom, 90);
-                }
+                if (action === 'delete') { currentContextMenuCell.innerHTML = ''; updateLayoutInMemory(); }
+                else if (action === 'rotate-left' && placedRoom) { handleRotate(placedRoom, -90); }
+                else if (action === 'rotate-right' && placedRoom) { handleRotate(placedRoom, 90); }
                 hideContextMenu();
             });
-
-            // Hide context menu if clicking elsewhere or pressing escape
             document.addEventListener('click', hideContextMenu);
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') {
-                    hideContextMenu();
-                }
-            });
+            document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hideContextMenu(); });
 
-
-            // --- URL & SHARING STATE MANAGEMENT ---
+            // --- URL & SHARING ---
             shareBtn.addEventListener('click', () => {
-                updateLayoutInMemory(); // Ensure layout string is current
+                updateLayoutInMemory();
                 const shareUrl = `${window.location.origin}${window.location.pathname}?layout=${currentLayoutString}`;
-                
                 const textArea = document.createElement('textarea');
                 textArea.value = shareUrl;
                 textArea.style.position = 'absolute';
                 textArea.style.left = '-9999px';
                 document.body.appendChild(textArea);
                 textArea.select();
-
                 try {
                     document.execCommand('copy');
                     shareBtn.textContent = 'Copied!';
-                    shareBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
-                    shareBtn.classList.add('bg-indigo-600');
-                    
+                    shareBtn.classList.remove('btn-green');
+                    shareBtn.classList.add('btn-indigo');
                     setTimeout(() => {
                         shareBtn.textContent = 'Copy Link';
-                        shareBtn.classList.add('bg-green-600', 'hover:bg-green-700');
-                        shareBtn.classList.remove('bg-indigo-600');
+                        shareBtn.classList.add('btn-green');
+                        shareBtn.classList.remove('btn-indigo');
                     }, 2000);
                 } catch (err) {
                     console.error('Failed to copy URL: ', err);
                     shareBtn.textContent = 'Copy Failed';
                 }
-
                 document.body.removeChild(textArea);
             });
-
 
             function updateLayoutInMemory() {
                 const layout = [];
@@ -879,49 +815,29 @@
             }
 
             function loadInitialLayout() {
-                const params = new URLSearchParams(window.location.search);
-                const layoutString = params.get('layout');
-
+                const layoutString = new URLSearchParams(window.location.search).get('layout');
                 if (layoutString) {
-                    // If a layout is in the URL, load it
                     layoutString.split('|').forEach(item => {
                         const [cellId, encodedRoomName, rotation] = item.split(':');
-                        if(cellId && encodedRoomName && rotation !== undefined) {
-                            const roomName = decodeURIComponent(encodedRoomName);
+                        if (cellId && encodedRoomName && rotation !== undefined) {
                             const cell = document.querySelector(`[data-id='${cellId}']`);
-                            if (cell) {
-                                placeRoom(cell, roomName, parseInt(rotation, 10));
-                            }
+                            if (cell) placeRoom(cell, decodeURIComponent(encodedRoomName), parseInt(rotation, 10));
                         }
                     });
                 } else {
-                    // Otherwise, load the default layout
                     loadDefaultLayout();
                 }
             }
 
             function loadDefaultLayout() {
-                // "AnteChamber is on cell 2,0 (from the top left with column,row)"
-                // This corresponds to row 0, column 2.
                 const antechamberCell = document.querySelector("[data-id='cell-0-2']");
-                if (antechamberCell) {
-                    placeRoom(antechamberCell, 'Antechamber', 0);
-                }
-
-                // "main enterence is 8,2". Assuming (column,row), column 8 is out of bounds for a 5-column grid.
-                // The most likely intent was (row, column), so placing at row 8, column 2.
+                if (antechamberCell) placeRoom(antechamberCell, 'Antechamber', 0);
                 const entranceHallCell = document.querySelector("[data-id='cell-8-2']");
-                if (entranceHallCell) {
-                    placeRoom(entranceHallCell, 'Entrance Hall', 0);
-                }
+                if (entranceHallCell) placeRoom(entranceHallCell, 'Entrance Hall', 0);
             }
 
             function clearLayout() {
-                // Clear all cells on the grid
-                document.querySelectorAll('.grid-cell').forEach(cell => {
-                    cell.innerHTML = '';
-                });
-                // Load the default layout
+                document.querySelectorAll('.grid-cell').forEach(cell => { cell.innerHTML = ''; });
                 loadDefaultLayout();
             }
             clearBtn.addEventListener('click', clearLayout);
