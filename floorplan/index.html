@@ -196,6 +196,7 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
+            aspect-ratio: 1 / 1;
         }
         .room-item-source:active { cursor: grabbing; transform: scale(0.95); }
 
@@ -230,9 +231,11 @@
 
         .placed-room {
             width: 100%; height: 100%; position: relative; user-select: none;
-            display: flex; align-items: center; justify-content: center; cursor: grab;
+            display: flex; align-items: center; justify-content: center;
         }
-        .placed-room:active { cursor: grabbing; }
+        .placed-room.can-drag { cursor: grab; }
+        .placed-room.can-drag:active { cursor: grabbing; }
+
         .placed-room img {
             max-width: 100%; max-height: 100%; pointer-events: none;
             transition: transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
@@ -243,7 +246,7 @@
             cursor: pointer; display: flex; align-items: center; justify-content: center;
             opacity: 0; transition: opacity 0.2s; z-index: 10;
         }
-        .placed-room:hover .rotate-btn { opacity: 1; }
+        .placed-room.show-controls .rotate-btn, .placed-room:hover .rotate-btn { opacity: 1; }
         .placed-room .rotate-left { left: -10px; }
         .placed-room .rotate-right { right: -10px; }
         .hidden { display: none !important; }
@@ -636,7 +639,9 @@
             });
 
             mainCanvas.addEventListener('mousedown', (e) => {
-                if (e.target.closest('.placed-room, .room-item-source, .rotate-btn, button, input, .accordion-header, #zoom-controls')) return;
+                // This now primarily serves desktop mouse.
+                // Added #side-panel to this check to allow clicks/scrolls there
+                if (e.target.closest('#side-panel, .placed-room, .room-item-source, .rotate-btn, button, input, .accordion-header, #zoom-controls')) return;
                 e.preventDefault();
                 viewState.isPanning = true;
                 mainCanvas.classList.add('panning');
@@ -659,30 +664,60 @@
                 updateCanvasTransform();
             });
 
+            // --- Mobile Touch Controls ---
             mainCanvas.addEventListener('touchstart', (e) => {
+                // If touch starts on side panel or zoom controls, do nothing to allow native scrolling/interaction
+                if (e.target.closest('#side-panel, #zoom-controls')) {
+                    return;
+                }
+                
+                // If touch is on an interactive element inside the canvas, let its own handlers work
+                if (e.target.closest('.placed-room, .rotate-btn')) {
+                    return;
+                }
+            
+                // Prevent default browser actions (like page scroll) only if we're going to pan
                 if (e.touches.length === 2) {
                     e.preventDefault();
-                    initialPinchDistance = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+                    viewState.isPanning = true;
+                    mainCanvas.classList.add('panning');
+                    // Get the midpoint of the two touches
+                    viewState.startX = (e.touches[0].pageX + e.touches[1].pageX) / 2;
+                    viewState.startY = (e.touches[0].pageY + e.touches[1].pageY) / 2;
+                    viewState.panStartX = viewState.translateX;
+                    viewState.panStartY = viewState.translateY;
                 }
-            });
-
+            }, { passive: false });
+            
             mainCanvas.addEventListener('touchmove', (e) => {
-                if (e.touches.length === 2 && initialPinchDistance) {
-                    e.preventDefault();
-                    const newDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
-                    const diff = newDist - initialPinchDistance;
-                    const oldScale = viewState.scale;
-                    const newScale = Math.min(Math.max(MIN_SCALE, oldScale + diff * 0.005), MAX_SCALE);
-                    viewState.scale = newScale;
-                    updateCanvasTransform();
-                    updateZoomControls();
-                    initialPinchDistance = newDist;
+                if (e.target.closest('#side-panel, #zoom-controls')) {
+                    return;
+                }
+                // We only act on two-finger touch moves for panning
+                if (!viewState.isPanning || e.touches.length !== 2) {
+                    return;
+                }
+                
+                e.preventDefault();
+                const midX = (e.touches[0].pageX + e.touches[1].pageX) / 2;
+                const midY = (e.touches[0].pageY + e.touches[1].pageY) / 2;
+            
+                const dx = midX - viewState.startX;
+                const dy = midY - viewState.startY;
+            
+                viewState.translateX = viewState.panStartX + dx;
+                viewState.translateY = viewState.panStartY + dy;
+                updateCanvasTransform();
+            }, { passive: false });
+            
+            mainCanvas.addEventListener('touchend', (e) => {
+                // If we have less than 2 fingers, the two-finger pan is over
+                if (e.touches.length < 2) {
+                    viewState.isPanning = false;
+                    mainCanvas.classList.remove('panning');
                 }
             });
 
-             mainCanvas.addEventListener('touchend', (e) => {
-                if (e.touches.length < 2) initialPinchDistance = null;
-            });
 
             function updateCanvasTransform() {
                 resizableCanvas.style.transform = `translate(${viewState.translateX}px, ${viewState.translateY}px) scale(${viewState.scale})`;
@@ -721,26 +756,69 @@
 
             // --- DRAG & DROP LOGIC ---
             let touchGhost = null, draggedRoomName = null, currentDropTarget = null, draggedFromGridInfo = null;
-            
+            let dragStartTimer = null; // For delayed drag on room items
+
             function addDragListeners(el) {
                 el.addEventListener('dragstart', (e) => {
                     e.dataTransfer.setData('text/plain', el.dataset.roomName);
                     draggedRoomName = el.dataset.roomName;
                 });
+
+                let startTouch = null;
+
                 el.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    draggedRoomName = el.dataset.roomName;
-                    if (!touchGhost) {
-                        const roomInfo = roomData.find(r => r.name === draggedRoomName);
-                        touchGhost = document.createElement('img');
-                        touchGhost.id = 'touch-ghost';
-                        touchGhost.src = roomInfo.imagePath;
-                        touchGhost.style.width = '120px';
-                        touchGhost.style.height = '120px';
-                        document.body.appendChild(touchGhost);
+                    // This handler is only for single-touch drag initiation from the sidebar
+                    if (e.touches.length !== 1) {
+                        clearTimeout(dragStartTimer);
+                        return;
                     }
-                    updateGhostPosition(e.touches[0]);
-                }, { passive: false });
+                    startTouch = e.touches[0];
+
+                    // Set a timer to initiate drag after a short delay (long-press)
+                    dragStartTimer = setTimeout(() => {
+                        // Timer fired, so we start the drag
+                        draggedRoomName = el.dataset.roomName;
+
+                        if (!touchGhost) {
+                            const roomInfo = roomData.find(r => r.name === draggedRoomName);
+                            touchGhost = document.createElement('img');
+                            touchGhost.id = 'touch-ghost';
+                            touchGhost.src = roomInfo.imagePath;
+                            touchGhost.style.width = '120px';
+                            touchGhost.style.height = '120px';
+                            document.body.appendChild(touchGhost);
+                        }
+                        updateGhostPosition(e.touches[0]);
+                        dragStartTimer = null; // Timer has done its job
+                    }, 250); // 250ms delay feels good for press-and-hold
+
+                }, { passive: true }); // Use passive: true to allow default scroll behavior initially
+
+                el.addEventListener('touchmove', (e) => {
+                    if (!startTouch || e.touches.length !== 1) return;
+
+                    // Check if it's a scroll gesture (significant vertical movement) before the timer fires
+                    const yDiff = Math.abs(e.touches[0].clientY - startTouch.clientY);
+                    
+                    if (dragStartTimer && yDiff > 10) {
+                        // It's a scroll, cancel the drag timer
+                        clearTimeout(dragStartTimer);
+                        dragStartTimer = null;
+                        startTouch = null;
+                    } else if (touchGhost) {
+                        // If the drag has already started (touchGhost exists), prevent scrolling and move the ghost
+                        e.preventDefault();
+                        updateGhostPosition(e.touches[0]);
+                    }
+                }, { passive: false }); // We need to be able to preventDefault if a drag starts
+
+                el.addEventListener('touchend', (e) => {
+                    // If the finger is lifted before the timer fires, it was a tap or scroll, not a drag.
+                    clearTimeout(dragStartTimer);
+                    dragStartTimer = null;
+                    startTouch = null;
+                    // The global 'touchend' on the document will handle the drop logic if a drag was initiated.
+                });
             }
 
             function updateGhostPosition(touch) {
@@ -799,7 +877,7 @@
                 placedRoom.className = 'placed-room';
                 placedRoom.dataset.roomName = roomName;
                 placedRoom.dataset.rotation = rotation;
-                placedRoom.draggable = true;
+                
                 const img = document.createElement('img');
                 img.src = roomInfo.imagePath;
                 img.alt = roomInfo.name;
@@ -821,6 +899,17 @@
             }
             
             function addPlacedRoomDragListeners(placedRoom, originCell) {
+                 let placedRoomDragTimer = null;
+
+                 placedRoom.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const wasActive = placedRoom.classList.contains('show-controls');
+                     document.querySelectorAll('.placed-room.show-controls').forEach(r => r.classList.remove('show-controls'));
+                     if(!wasActive) {
+                        placedRoom.classList.add('show-controls');
+                     }
+                 });
+
                  placedRoom.addEventListener('dragstart', (e) => {
                     e.stopPropagation();
                     document.getElementById('delete-zone').style.display = 'flex';
@@ -828,31 +917,57 @@
                     e.dataTransfer.setData('text/room-from-grid', JSON.stringify(roomDragData));
                     setTimeout(() => placedRoom.style.opacity = '0.5', 0);
                 });
+
                 placedRoom.addEventListener('dragend', () => {
                     placedRoom.style.opacity = '1';
                     document.getElementById('delete-zone').style.display = 'none';
                 });
+
                 placedRoom.addEventListener('touchstart', (e) => {
-                    e.preventDefault(); e.stopPropagation();
-                    document.getElementById('delete-zone').style.display = 'flex';
-                    draggedFromGridInfo = { roomName: placedRoom.dataset.roomName, rotation: parseInt(placedRoom.dataset.rotation, 10), originCell: originCell };
-                    if (!touchGhost) { 
-                        const roomInfo = roomData.find(r => r.name === draggedFromGridInfo.roomName);
-                        touchGhost = document.createElement('img');
-                        touchGhost.id = 'touch-ghost';
-                        touchGhost.src = roomInfo.imagePath;
-                        touchGhost.style.width = '120px';
-                        touchGhost.style.height = '120px';
-                        document.body.appendChild(touchGhost);
-                     }
-                    placedRoom.style.opacity = '0.5';
-                    updateGhostPosition(e.touches[0]);
+                    if (e.touches.length !== 1) return;
+                    e.stopPropagation(); 
+                    
+                    placedRoomDragTimer = setTimeout(() => {
+                        placedRoom.classList.add('can-drag'); // Allow dragging
+                        placedRoom.draggable = true;
+                        
+                        document.getElementById('delete-zone').style.display = 'flex';
+                        draggedFromGridInfo = { roomName: placedRoom.dataset.roomName, rotation: parseInt(placedRoom.dataset.rotation, 10), originCell: originCell };
+                        if (!touchGhost) { 
+                            const roomInfo = roomData.find(r => r.name === draggedFromGridInfo.roomName);
+                            touchGhost = document.createElement('img');
+                            touchGhost.id = 'touch-ghost';
+                            touchGhost.src = roomInfo.imagePath;
+                            touchGhost.style.width = '120px';
+                            touchGhost.style.height = '120px';
+                            document.body.appendChild(touchGhost);
+                         }
+                        placedRoom.style.opacity = '0.5';
+                        updateGhostPosition(e.touches[0]);
+
+                    }, 250); // Long press to drag
                 }, { passive: false });
+
+                placedRoom.addEventListener('touchmove', (e) => {
+                    if(draggedFromGridInfo) { // if drag has started
+                        e.preventDefault();
+                    }
+                    clearTimeout(placedRoomDragTimer);
+                }, { passive: false });
+
+                placedRoom.addEventListener('touchend', () => {
+                    clearTimeout(placedRoomDragTimer);
+                    placedRoom.draggable = false;
+                    placedRoom.classList.remove('can-drag');
+                });
             }
 
             document.addEventListener('touchmove', (e) => { 
                 if (!touchGhost) return;
-                e.preventDefault();
+                // Prevents the main canvas from panning while dragging a ghost image
+                if(e.target.closest('#main-canvas') && !e.target.closest('#side-panel')){
+                     e.preventDefault();
+                }
                 updateGhostPosition(e.touches[0]);
             }, { passive: false });
             
@@ -1045,8 +1160,15 @@
                 if (entranceHallCell) placeRoom(entranceHallCell, 'Entrance Hall', 0);
             }
             
-            // --- CONTEXT MENU ---
+            // --- CONTEXT MENU & GLOBAL CLICKS ---
             function hideContextMenu() { contextMenu.classList.add('hidden'); currentContextMenuCell = null; }
+
+            mainCanvas.addEventListener('click', (e) => {
+                 if (!e.target.closest('.placed-room')) {
+                    document.querySelectorAll('.placed-room.show-controls').forEach(r => r.classList.remove('show-controls'));
+                 }
+            });
+            
             contextMenu.addEventListener('click', (e) => {
                 if (!currentContextMenuCell) return;
                 const action = e.target.closest('button').dataset.action;
@@ -1056,7 +1178,7 @@
                 else if (action === 'rotate-right' && placedRoom) { handleRotate(placedRoom, 90); }
                 hideContextMenu();
             });
-            document.addEventListener('click', hideContextMenu);
+
             document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hideContextMenu(); });
 
             function handleRotate(placedRoom, angle) {
@@ -1070,8 +1192,4 @@
     </script>
 </body>
 </html>
-
-
-
-
 
