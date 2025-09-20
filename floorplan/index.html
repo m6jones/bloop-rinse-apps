@@ -502,6 +502,7 @@
             const savePlanBtn = document.getElementById('save-plan-btn');
             const savedPlansList = document.getElementById('saved-plans-list');
             const savedPlansKey = 'roomLayoutPlannerSavedPlans';
+            const currentVersionKey = 'roomLayoutPlannerCurrentVersion'; // Key for auto-save
             const zoomSlider = document.getElementById('zoom-slider');
             const zoomInput = document.getElementById('zoom-input');
             const resetViewBtn = document.getElementById('reset-view-btn');
@@ -895,6 +896,7 @@
                 document.querySelectorAll('.grid-cell').forEach(cell => { cell.innerHTML = ''; });
                 loadDefaultLayout();
                 history.pushState({}, '', window.location.pathname);
+                localStorage.removeItem(currentVersionKey); // Clear auto-saved version on reset
             });
 
             shareBtn.addEventListener('click', () => {
@@ -940,7 +942,8 @@
                 const planToLoad = plans.find(p => p.name === name);
                 if (planToLoad) {
                     loadLayoutFromString(planToLoad.layout);
-                    history.pushState({}, '', `${window.location.pathname}?layout=${planToLoad.layout}`);
+                    // After loading from a saved plan, also clear the URL
+                    history.replaceState({}, '', window.location.pathname);
                 }
             }
 
@@ -1001,6 +1004,7 @@
                     }
                 });
                 currentLayoutString = layout.join('|');
+                localStorage.setItem(currentVersionKey, currentLayoutString); // Auto-save on every change
             }
             
             function loadLayoutFromString(layoutString) {
@@ -1018,11 +1022,18 @@
             function loadInitialLayout() {
                 const urlParams = new URLSearchParams(window.location.search);
                 const layoutString = urlParams.get('layout');
+                const savedLayout = localStorage.getItem(currentVersionKey);
+
                 if (layoutString) {
+                    // Priority 1: Load from URL parameter (for sharing)
                     loadLayoutFromString(layoutString);
                     // After loading, remove the query params from the URL
                     history.replaceState({}, '', window.location.pathname);
+                } else if (savedLayout) {
+                    // Priority 2: Load from the last saved session in local storage
+                    loadLayoutFromString(savedLayout);
                 } else {
+                    // Priority 3: Load the default layout if nothing else is found
                     loadDefaultLayout();
                 }
             }
@@ -1059,5 +1070,7 @@
     </script>
 </body>
 </html>
+
+
 
 
