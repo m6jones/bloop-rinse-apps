@@ -1016,9 +1016,12 @@
             }
 
             function loadInitialLayout() {
-                const layoutString = new URLSearchParams(window.location.search).get('layout');
+                const urlParams = new URLSearchParams(window.location.search);
+                const layoutString = urlParams.get('layout');
                 if (layoutString) {
                     loadLayoutFromString(layoutString);
+                    // After loading, remove the query params from the URL
+                    history.replaceState({}, '', window.location.pathname);
                 } else {
                     loadDefaultLayout();
                 }
@@ -1056,4 +1059,5 @@
     </script>
 </body>
 </html>
+
 
