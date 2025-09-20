@@ -57,7 +57,7 @@
             justify-content: center; /* Center canvas horizontally */
             overflow: hidden; /* Important for pan/zoom */
             cursor: grab;
-            background-color: #ffffff; /* White Background */
+            background-color: var(--card-bg-color); /* White Background */
             background-image:
                 linear-gradient(#f3f4f6 1px, transparent 1px),
                 linear-gradient(90deg, #f3f4f6 1px, transparent 1px);
@@ -71,7 +71,7 @@
             padding: 1rem;
             border-radius: 0.5rem;
             height: auto;
-            background-color: var(--card-bg-color); /* Match sidebar background */
+            background-color: white; /* Match sidebar background */
             transition: transform 0.1s linear; /* Smooth zoom */
             flex-shrink: 0; /* Prevent canvas from shrinking when panned */
         }
