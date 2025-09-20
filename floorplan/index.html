@@ -43,12 +43,39 @@
             height: 90vh; /* Default height */
             min-width: 340px; /* Prevent collapsing too small */
             min-height: 340px;
-            display: grid;
-            grid-template-columns: 1fr 5fr;
+            display: flex; /* Changed from grid */
             gap: 4px;
         }
 
+        #left-column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        #delete-zone {
+            flex-grow: 1;
+            border: 2px dashed #f56565;
+            border-radius: 8px;
+            display: none; /* Initially hidden */
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: #c53030;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        
+        #delete-zone.drag-over-delete {
+            background-color: #fed7d7;
+            border-color: #c53030;
+            border-style: solid;
+            font-weight: 600;
+        }
+        
         #grid-container {
+            flex: 5; /* Takes up the remaining space */
             display: grid;
             grid-template-columns: repeat(5, 1fr);
             gap: 4px;
@@ -119,6 +146,10 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            cursor: grab;
+        }
+        .placed-room:active {
+            cursor: grabbing;
         }
         .placed-room img {
             max-width: 100%;
@@ -184,7 +215,15 @@
         <!-- Main Canvas Area -->
         <main id="main-canvas">
             <div id="resizable-canvas">
-                <div id="extra-space"></div>
+                <div id="left-column">
+                    <div id="extra-space"></div>
+                    <div id="delete-zone">
+                        <div class="p-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-trash mx-auto mb-2" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/><path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/></svg>
+                            Drag Here to Delete
+                        </div>
+                    </div>
+                </div>
                 <div id="grid-container"></div>
             </div>
         </main>
@@ -208,8 +247,33 @@
                  <h2 class="text-lg font-semibold mb-2">Canvas Options</h2>
                  <p class="text-sm text-gray-600 mb-4">Reset the canvas container to its default size.</p>
                  <button id="reset-size-btn" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 transition-colors">Reset Size</button>
+
+                 <h2 class="text-lg font-semibold mt-6 mb-2">Clear Layout</h2>
+                 <p class="text-sm text-gray-600 mb-4">Remove all rooms and reset the board to the default layout.</p>
+                 <button id="clear-btn" class="w-full px-4 py-2 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-75 transition-colors">Clear and Reset</button>
+
+                 <h2 class="text-lg font-semibold mt-6 mb-2">Share Layout</h2>
+                 <p class="text-sm text-gray-600 mb-4">Copy a shareable link of your current layout to your clipboard.</p>
+                 <button id="share-btn" class="w-full px-4 py-2 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-75 transition-colors">Copy Link</button>
             </div>
         </aside>
+    </div>
+
+    <!-- Custom Right-Click Context Menu -->
+    <div id="custom-context-menu" class="hidden absolute bg-white border border-gray-300 rounded-lg shadow-xl py-2 z-50 w-40">
+        <button data-action="rotate-left" class="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-counterclockwise" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 3a5 5 0 1 1-4.546 2.914.5.5 0 0 0-.908-.417A6 6 0 1 0 8 2z"/><path d="M8 4.466V.534a.25.25 0 0 0-.41-.192L5.23 2.308a.25.25 0 0 0 0 .384l2.36 1.966A.25.25 0 0 0 8 4.466"/></svg>
+            Rotate Left
+        </button>
+        <button data-action="rotate-right" class="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-clockwise" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/><path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/></svg>
+            Rotate Right
+        </button>
+        <div class="border-t my-1"></div>
+        <button data-action="delete" class="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/><path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/></svg>
+            Delete Room
+        </button>
     </div>
 
     <script>
@@ -332,13 +396,19 @@
             const roomListContainer = document.getElementById('room-list');
             const resizableCanvas = document.getElementById('resizable-canvas');
             const resetSizeBtn = document.getElementById('reset-size-btn');
+            const shareBtn = document.getElementById('share-btn');
+            const clearBtn = document.getElementById('clear-btn');
             const tabButtons = document.querySelectorAll('.tab-btn');
             const tabContents = document.querySelectorAll('.tab-content');
+            const contextMenu = document.getElementById('custom-context-menu');
+            const deleteZone = document.getElementById('delete-zone');
 
             const GRID_ROWS = 9;
             const GRID_COLS = 5;
 
             // --- STATE & INITIALIZATION ---
+            let currentLayoutString = '';
+            let currentContextMenuCell = null;
 
             // Group rooms by type for the accordion
             const roomsByType = roomData.reduce((acc, room) => {
@@ -361,6 +431,9 @@
             extraCell.dataset.id = 'extra-0';
             addDropListeners(extraCell);
             extraSpaceContainer.appendChild(extraCell);
+
+            // Add drop listeners to the delete zone
+            addDeleteZoneListeners(deleteZone);
 
 
             // Generate the side panel with accordions
@@ -402,8 +475,8 @@
                 roomListContainer.appendChild(accordionWrapper);
             });
 
-            // Load initial layout from URL
-            loadLayoutFromURL();
+            // Load initial layout from URL or set default
+            loadInitialLayout();
             
             // --- Tab Logic ---
             tabButtons.forEach(button => {
@@ -467,6 +540,7 @@
             let touchGhost = null;
             let draggedRoomName = null;
             let currentDropTarget = null;
+            let draggedFromGridInfo = null; // Holds info if dragging from the grid: { roomName, rotation, originCell }
             
             function addDragListeners(el) {
                 // Mouse drag events
@@ -501,13 +575,37 @@
 
             document.addEventListener('touchend', (e) => {
                 if (!touchGhost) return;
-                touchGhost.style.opacity = '0';
 
-                if (currentDropTarget) {
-                    placeRoom(currentDropTarget, draggedRoomName);
-                    currentDropTarget.classList.remove('drag-over');
+                // --- Handle drop logic (for both grid move and new room) ---
+                if (draggedFromGridInfo) { // Logic for moving an existing room
+                    const originCell = draggedFromGridInfo.originCell;
+                    const originPlacedRoom = originCell.querySelector('.placed-room');
+                    if(originPlacedRoom) originPlacedRoom.style.opacity = '1';
+
+                    if (currentDropTarget) {
+                        if (currentDropTarget.id === 'delete-zone') {
+                            originCell.innerHTML = ''; // Delete from origin
+                            updateLayoutInMemory();
+                        } else if (currentDropTarget.classList.contains('grid-cell') && originCell.dataset.id !== currentDropTarget.dataset.id) {
+                            originCell.innerHTML = ''; // Clear origin
+                            placeRoom(currentDropTarget, draggedFromGridInfo.roomName, draggedFromGridInfo.rotation);
+                        }
+                    }
+                    deleteZone.style.display = 'none'; // Hide delete zone
+                    draggedFromGridInfo = null;
+
+                } else if (draggedRoomName) { // Logic for placing a new room from the panel
+                    if (currentDropTarget && currentDropTarget.classList.contains('grid-cell')) {
+                        placeRoom(currentDropTarget, draggedRoomName);
+                    }
                 }
                 
+                // --- General cleanup ---
+                if(currentDropTarget) {
+                    currentDropTarget.classList.remove('drag-over', 'drag-over-delete');
+                }
+
+                touchGhost.style.opacity = '0';
                 setTimeout(() => {
                     if (touchGhost && touchGhost.parentNode) {
                         touchGhost.parentNode.removeChild(touchGhost);
@@ -527,13 +625,15 @@
                 touchGhost.style.display = 'block';
 
                 if (currentDropTarget && currentDropTarget !== elementUnder) {
-                    currentDropTarget.classList.remove('drag-over');
+                    currentDropTarget.classList.remove('drag-over', 'drag-over-delete');
                 }
                 
-                const dropTarget = elementUnder ? elementUnder.closest('.grid-cell') : null;
+                const dropTarget = elementUnder ? elementUnder.closest('.grid-cell, #delete-zone') : null;
+
                 if (dropTarget) {
                     currentDropTarget = dropTarget;
-                    currentDropTarget.classList.add('drag-over');
+                    const overClass = currentDropTarget.id === 'delete-zone' ? 'drag-over-delete' : 'drag-over';
+                    currentDropTarget.classList.add(overClass);
                 } else {
                     currentDropTarget = null;
                 }
@@ -551,8 +651,34 @@
                 cell.addEventListener('drop', (e) => {
                     e.preventDefault();
                     cell.classList.remove('drag-over');
-                    const roomName = e.dataTransfer.getData('text/plain');
-                    placeRoom(cell, roomName);
+
+                    // Check for moving a room from the grid
+                    const movedRoomDataString = e.dataTransfer.getData('text/room-from-grid');
+                    if (movedRoomDataString) {
+                        const data = JSON.parse(movedRoomDataString);
+                        if (data.originId === cell.dataset.id) return; // Dropped on itself
+
+                        const originCell = document.querySelector(`[data-id='${data.originId}']`);
+                        if (originCell) originCell.innerHTML = '';
+                        
+                        placeRoom(cell, data.roomName, parseInt(data.rotation, 10));
+
+                    } else { // It's a new room from the side panel
+                        const roomName = e.dataTransfer.getData('text/plain');
+                        placeRoom(cell, roomName);
+                    }
+                });
+                
+                // Add right-click listener
+                cell.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    const placedRoom = cell.querySelector('.placed-room');
+                    if (placedRoom) {
+                        currentContextMenuCell = cell;
+                        contextMenu.style.top = `${e.clientY}px`;
+                        contextMenu.style.left = `${e.clientX}px`;
+                        contextMenu.classList.remove('hidden');
+                    }
                 });
             }
 
@@ -568,6 +694,7 @@
                 placedRoom.className = 'placed-room';
                 placedRoom.dataset.roomName = roomName;
                 placedRoom.dataset.rotation = rotation;
+                placedRoom.draggable = true;
 
                 const img = document.createElement('img');
                 img.src = roomInfo.imagePath;
@@ -588,7 +715,54 @@
                 placedRoom.appendChild(img);
                 placedRoom.appendChild(rotateRightBtn);
                 cell.appendChild(placedRoom);
-                updateURL();
+                
+                addPlacedRoomDragListeners(placedRoom, cell);
+                updateLayoutInMemory();
+            }
+
+            function addPlacedRoomDragListeners(placedRoom, originCell) {
+                // For Mouse Drag
+                placedRoom.addEventListener('dragstart', (e) => {
+                    e.stopPropagation();
+                    deleteZone.style.display = 'flex'; // Show delete zone
+                    const roomDragData = {
+                        roomName: placedRoom.dataset.roomName,
+                        rotation: placedRoom.dataset.rotation,
+                        originId: originCell.dataset.id
+                    };
+                    e.dataTransfer.setData('text/room-from-grid', JSON.stringify(roomDragData));
+                    setTimeout(() => placedRoom.style.opacity = '0.5', 0);
+                });
+
+                placedRoom.addEventListener('dragend', (e) => {
+                    placedRoom.style.opacity = '1';
+                    deleteZone.style.display = 'none'; // Hide delete zone
+                });
+
+                // For Touch Drag
+                placedRoom.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    deleteZone.style.display = 'flex'; // Show delete zone
+
+                    draggedFromGridInfo = {
+                        roomName: placedRoom.dataset.roomName,
+                        rotation: parseInt(placedRoom.dataset.rotation, 10),
+                        originCell: originCell
+                    };
+
+                    if (!touchGhost) {
+                        touchGhost = document.createElement('img');
+                        touchGhost.id = 'touch-ghost';
+                        touchGhost.src = placedRoom.querySelector('img').src;
+                        touchGhost.style.width = '120px';
+                        touchGhost.style.height = '120px';
+                        touchGhost.style.transform = `translate(-50%, -50%) rotate(${draggedFromGridInfo.rotation}deg)`;
+                        document.body.appendChild(touchGhost);
+                    }
+                    placedRoom.style.opacity = '0.5';
+                    updateGhostPosition(e.touches[0]);
+                }, { passive: false });
             }
 
             function handleRotate(placedRoom, angle) {
@@ -597,48 +771,162 @@
                 currentRotation = (currentRotation + angle + 360) % 360;
                 placedRoom.dataset.rotation = currentRotation;
                 img.style.transform = `rotate(${currentRotation}deg)`;
-                updateURL();
+                updateLayoutInMemory();
             }
 
-            // --- URL STATE MANAGEMENT ---
-
-            function updateURL() {
-                try {
-                    const layout = [];
-                    document.querySelectorAll('.grid-cell').forEach(cell => {
-                        const placedRoom = cell.querySelector('.placed-room');
-                        if (placedRoom) {
-                            const cellId = cell.dataset.id;
-                            const roomName = placedRoom.dataset.roomName;
-                            const rotation = placedRoom.dataset.rotation;
-                            layout.push(`${cellId}:${encodeURIComponent(roomName)}:${rotation}`);
-                        }
-                    });
-                    const layoutString = layout.join('|');
-                    const newUrl = `${window.location.pathname}?layout=${layoutString}`;
-                    window.history.replaceState({ path: newUrl }, '', newUrl);
-                } catch (error) {
-                    console.warn("URL could not be updated, possibly due to sandbox restrictions.", error);
-                }
-            }
-
-            function loadLayoutFromURL() {
-                const params = new URLSearchParams(window.location.search);
-                const layoutString = params.get('layout');
-                if (!layoutString) return;
-
-                layoutString.split('|').forEach(item => {
-                    const [cellId, encodedRoomName, rotation] = item.split(':');
-                    if(cellId && encodedRoomName && rotation !== undefined) {
-                        const roomName = decodeURIComponent(encodedRoomName);
-                        const cell = document.querySelector(`[data-id='${cellId}']`);
-                        if (cell) {
-                            placeRoom(cell, roomName, parseInt(rotation, 10));
+            // --- DELETE ZONE LOGIC ---
+            function addDeleteZoneListeners(zone) {
+                zone.addEventListener('dragover', (e) => {
+                    if (e.dataTransfer.types.includes('text/room-from-grid')) {
+                        e.preventDefault();
+                        zone.classList.add('drag-over-delete');
+                    }
+                });
+                zone.addEventListener('dragleave', () => {
+                    zone.classList.remove('drag-over-delete');
+                });
+                zone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    zone.classList.remove('drag-over-delete');
+                    const movedRoomDataString = e.dataTransfer.getData('text/room-from-grid');
+                    if (movedRoomDataString) {
+                        const data = JSON.parse(movedRoomDataString);
+                        const originCell = document.querySelector(`[data-id='${data.originId}']`);
+                        if (originCell) {
+                            originCell.innerHTML = '';
+                            updateLayoutInMemory();
                         }
                     }
                 });
             }
+
+            // --- CONTEXT MENU LOGIC ---
+            function hideContextMenu() {
+                contextMenu.classList.add('hidden');
+                currentContextMenuCell = null;
+            }
+
+            contextMenu.addEventListener('click', (e) => {
+                if (!currentContextMenuCell) return;
+
+                const action = e.target.closest('button').dataset.action;
+                const placedRoom = currentContextMenuCell.querySelector('.placed-room');
+
+                if (action === 'delete') {
+                    currentContextMenuCell.innerHTML = '';
+                    updateLayoutInMemory();
+                } else if (action === 'rotate-left' && placedRoom) {
+                    handleRotate(placedRoom, -90);
+                } else if (action === 'rotate-right' && placedRoom) {
+                    handleRotate(placedRoom, 90);
+                }
+                hideContextMenu();
+            });
+
+            // Hide context menu if clicking elsewhere or pressing escape
+            document.addEventListener('click', hideContextMenu);
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    hideContextMenu();
+                }
+            });
+
+
+            // --- URL & SHARING STATE MANAGEMENT ---
+            shareBtn.addEventListener('click', () => {
+                updateLayoutInMemory(); // Ensure layout string is current
+                const shareUrl = `${window.location.origin}${window.location.pathname}?layout=${currentLayoutString}`;
+                
+                const textArea = document.createElement('textarea');
+                textArea.value = shareUrl;
+                textArea.style.position = 'absolute';
+                textArea.style.left = '-9999px';
+                document.body.appendChild(textArea);
+                textArea.select();
+
+                try {
+                    document.execCommand('copy');
+                    shareBtn.textContent = 'Copied!';
+                    shareBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                    shareBtn.classList.add('bg-indigo-600');
+                    
+                    setTimeout(() => {
+                        shareBtn.textContent = 'Copy Link';
+                        shareBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+                        shareBtn.classList.remove('bg-indigo-600');
+                    }, 2000);
+                } catch (err) {
+                    console.error('Failed to copy URL: ', err);
+                    shareBtn.textContent = 'Copy Failed';
+                }
+
+                document.body.removeChild(textArea);
+            });
+
+
+            function updateLayoutInMemory() {
+                const layout = [];
+                document.querySelectorAll('.grid-cell').forEach(cell => {
+                    const placedRoom = cell.querySelector('.placed-room');
+                    if (placedRoom) {
+                        const cellId = cell.dataset.id;
+                        const roomName = placedRoom.dataset.roomName;
+                        const rotation = placedRoom.dataset.rotation;
+                        layout.push(`${cellId}:${encodeURIComponent(roomName)}:${rotation}`);
+                    }
+                });
+                currentLayoutString = layout.join('|');
+            }
+
+            function loadInitialLayout() {
+                const params = new URLSearchParams(window.location.search);
+                const layoutString = params.get('layout');
+
+                if (layoutString) {
+                    // If a layout is in the URL, load it
+                    layoutString.split('|').forEach(item => {
+                        const [cellId, encodedRoomName, rotation] = item.split(':');
+                        if(cellId && encodedRoomName && rotation !== undefined) {
+                            const roomName = decodeURIComponent(encodedRoomName);
+                            const cell = document.querySelector(`[data-id='${cellId}']`);
+                            if (cell) {
+                                placeRoom(cell, roomName, parseInt(rotation, 10));
+                            }
+                        }
+                    });
+                } else {
+                    // Otherwise, load the default layout
+                    loadDefaultLayout();
+                }
+            }
+
+            function loadDefaultLayout() {
+                // "AnteChamber is on cell 2,0 (from the top left with column,row)"
+                // This corresponds to row 0, column 2.
+                const antechamberCell = document.querySelector("[data-id='cell-0-2']");
+                if (antechamberCell) {
+                    placeRoom(antechamberCell, 'Antechamber', 0);
+                }
+
+                // "main enterence is 8,2". Assuming (column,row), column 8 is out of bounds for a 5-column grid.
+                // The most likely intent was (row, column), so placing at row 8, column 2.
+                const entranceHallCell = document.querySelector("[data-id='cell-8-2']");
+                if (entranceHallCell) {
+                    placeRoom(entranceHallCell, 'Entrance Hall', 0);
+                }
+            }
+
+            function clearLayout() {
+                // Clear all cells on the grid
+                document.querySelectorAll('.grid-cell').forEach(cell => {
+                    cell.innerHTML = '';
+                });
+                // Load the default layout
+                loadDefaultLayout();
+            }
+            clearBtn.addEventListener('click', clearLayout);
         });
     </script>
 </body>
 </html>
+
