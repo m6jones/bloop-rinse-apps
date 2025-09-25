@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Darktide: A Guide to Critical Hit Blessings</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c;
+            color: #e2e8f0;
+        }
+        .weapon-card {
+            background-color: #2d3748;
+            border: 1px solid #4a5568;
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .weapon-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .blessing-tag {
+            background-color: #4a5568;
+            color: #cbd5e0;
+        }
+        .honorable-mention-card {
+             background-color: #2c3342;
+             border-left: 4px solid #a0aec0;
+        }
+        h1, h2, h3 {
+             font-weight: 700;
+        }
+        .prose {
+            max-width: 80ch;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .header-glow {
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <div class="container mx-auto p-4 md:p-8">
+        
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold mb-2 header-glow">Darktide Crit Blessings Analysis</h1>
+            <p class="text-lg text-gray-400">An examination of weapons with interesting blessings that benefit from critical hits, based on thoughts from Alexander Graham.</p>
+        </header>
+
+        <main class="prose">
+            <h2 class="text-3xl font-semibold border-b-2 border-gray-600 pb-2 mb-8">Weapons with Crit-Synergy Blessings</h2>
+            <p class="mb-10 text-gray-300">The following weapons possess blessings that trigger powerful effects upon scoring a critical hit, turning a lucky shot into a decisive moment.</p>
+
+            <div class="space-y-8">
+                <!-- Combat Axes -->
+                <div class="weapon-card rounded-lg p-6">
+                    <h3 class="text-2xl font-semibold mb-4">Combat Axes</h3>
+                    <img src="https://warhammer-40k-darktide.fandom.com/wiki/Special:FilePath/Achlys_Mk_I_Combat_Axe.png" alt="Combat Axe" class="mx-auto my-4 rounded-lg" style="max-height: 150px;">
+                    <ul class="list-disc list-inside space-y-2">
+                        <li><strong class="blessing-tag rounded-md px-2 py-1">Decapitator:</strong> Gain a bonus to Finesse (including critical damage) on one-shot kills.</li>
+                    </ul>
+                </div>
+
+                <!-- Tactical Axes -->
+                <div class="weapon-card rounded-lg p-6">
+                    <h3 class="text-2xl font-semibold mb-4">Tactical Axes</h3>
+                    <img src="https://warhammer-40k-darktide.fandom.com/wiki/Special:FilePath/Atrox_Mk_II_Tactical_Axe.png" alt="Tactical Axe" class="mx-auto my-4 rounded-lg" style="max-height: 150px;">
+                    <ul class="list-disc list-inside space-y-2">
+                         <li><strong class="blessing-tag rounded-md px-2 py-1">Slaughter Spree:</strong> Gain +100% critical chance on your next melee attack after a weakspot critical hit kill.</li>
+                    </ul>
+                </div>
+                
+                <!-- Chainswords, Relic Blades & Cleavers -->
+                <div class="weapon-card rounded-lg p-6">
+                    <h3 class="text-2xl font-semibold mb-4">Chainswords, Relic Blades & Cleavers</h3>
+                    <img src="https://warhammer-40k-darktide.fandom.com/wiki/Special:FilePath/Orestes_Mk_IV_Assault_Chainsword.png" alt="Chainsword" class="mx-auto my-4 rounded-lg" style="max-height: 150px;">
+                    <ul class="list-disc list-inside space-y-2">
+                        <li><strong class="blessing-tag rounded-md px-2 py-1">Devastating Strike:</strong> Gain +80% cleave for 5 seconds on a critical hit.</li>
+                        <li><strong class="blessing-tag rounded-md px-2 py-1">Heatsink (Relic Blades):</strong> Critical hit kills reduce heat.</li>
+                    </ul>
+                </div>
+
+                <!-- Quickdraw Stub Revolvers -->
+                <div class="weapon-card rounded-lg p-6">
+                    <h3 class="text-2xl font-semibold mb-4">Quickdraw Stub Revolvers</h3>
+                     <img src="https://warhammer-40k-darktide.fandom.com/wiki/Special:FilePath/Zarona_Mk_IIa_Quickdraw_Stub_Revolver.png" alt="Stub Revolver" class="mx-auto my-4 rounded-lg" style="max-height: 150px;">
+                    <ul class="list-disc list-inside space-y-2">
+                       <li><strong class="blessing-tag rounded-md px-2 py-1">Hand Cannon:</strong> Gain +60% rending on a critical hit.</li>
+                    </ul>
+                </div>
+
+                 <!-- Autoguns & Heavy Stubbers -->
+                <div class="weapon-card rounded-lg p-6">
+                    <h3 class="text-2xl font-semibold mb-4">Autoguns & Heavy Stubbers</h3>
+                    <img src="https://warhammer-40k-darktide.fandom.com/wiki/Special:FilePath/Graia_Mk_VIII_Infantry_Autogun.png" alt="Vigilant Autogun" class="mx-auto my-4 rounded-lg" style="max-height: 150px;">
+                    <ul class="list-disc list-inside space-y-2">
+                       <li><strong class="blessing-tag rounded-md px-2 py-1">Deadly Accurate:</strong> Gain +100% critical weakspot damage.</li>
+                    </ul>
+                </div>
+
+                <!-- Shotguns & Ripper Guns -->
+                <div class="weapon-card rounded-lg p-6">
+                    <h3 class="text-2xl font-semibold mb-4">Shotguns & Ripper Guns</h3>
+                    <img src="https://warhammer-40k-darktide.fandom.com/wiki/Special:FilePath/Agripinaa_Mk_VII_Combat_Shotgun.png" alt="Combat Shotgun" class="mx-auto my-4 rounded-lg" style="max-height: 150px;">
+                    <ul class="list-disc list-inside space-y-2">
+                        <li><strong class="blessing-tag rounded-md px-2 py-1">Flechette:</strong> Inflict bleed stacks on a critical hit (+6 for shotguns, not specified for Ripper).</li>
+                        <li><strong class="blessing-tag rounded-md px-2 py-1">Manstopper:</strong> Increased cleave and +25% ranged stagger on critical hit.</li>
+                    </ul>
+                </div>
+                 
+                <!-- Bolt Pistols -->
+                <div class="weapon-card rounded-lg p-6">
+                    <h3 class="text-2xl font-semibold mb-4">Bolt Pistols</h3>
+                     <img src="https://warhammer-40k-darktide.fandom.com/wiki/Special:FilePath/Retribution_Mk_IV_Bolt_Pistol.png" alt="Bolt Pistol" class="mx-auto my-4 rounded-lg" style="max-height: 150px;">
+                    <ul class="list-disc list-inside space-y-2">
+                        <li><strong class="blessing-tag rounded-md px-2 py-1">Deadly Accurate:</strong> Gain +100% critical weakspot damage.</li>
+                    </ul>
+                </div>
+
+                <!-- Double-barreled Shotguns -- >
+                 <div class="weapon-card rounded-lg p-6">
+                    <h3 class="text-2xl font-semibold mb-4">Double-barreled Shotguns</h3>
+                     <img src="https://warhammer-40k-darktide.fandom.com/wiki/Special:FilePath/Ius_Mk_III_Braced_Autogun.png" alt="Double-barreled Shotgun" class="mx-auto my-4 rounded-lg" style="max-height: 150px;">
+                    <ul class="list-disc list-inside space-y-2">
+                        <li><strong class="blessing-tag rounded-md px-2 py-1">Manstopper:</strong> Increased cleave and +25% ranged stagger on critical hit.</li>
+                        <li><strong class="blessing-tag rounded-md px-2 py-1">Flechette:</strong> Inflict +6 bleed stacks on a critical hit.</li>
+                    </ul>
+                </div -- >
+
+                <!-- Combat Blades -->
+                <div class="weapon-card rounded-lg p-6">
+                    <h3 class="text-2xl font-semibold mb-4">Combat Blades</h3>
+                    <img src="https://warhammer-40k-darktide.fandom.com/wiki/Special:FilePath/Catachan_Mk_III_Combat_Blade.png" alt="Combat Blade" class="mx-auto my-4 rounded-lg" style="max-height: 150px;">
+                    <ul class="list-disc list-inside space-y-2">
+                        <li><strong class="blessing-tag rounded-md px-2 py-1">Flesh-tearer:</strong> Apply +8 Bleed stacks on a critical hit.</li>
+                        <li><strong class="blessing-tag rounded-md px-2 py-1">Precognition:</strong> Gain +60% Finesse damage on successful dodge.</li>
+                    </ul>
+                </div>
+                
+                <!-- Heavy Melee Weapons -->
+                <div class="weapon-card rounded-lg p-6">
+                    <h3 class="text-2xl font-semibold mb-4">Heavy Melee Weapons</h3>
+                    <p class="text-sm text-gray-400 -mt-2 mb-4">(Heavy Swords, Eviscerators, Bully Clubs, Latrine Shovels, Power Mauls, Slab Shields)</p>
+                    <img src="https://warhammer-40k-darktide.fandom.com/wiki/Special:FilePath/Tigrus_Mk_II_Heavy_Eviscerator.png" alt="Heavy Sword" class="mx-auto my-4 rounded-lg" style="max-height: 150px;">
+                    <ul class="list-disc list-inside space-y-2">
+                        <li><strong class="blessing-tag rounded-md px-2 py-1">Perfect Strike:</strong> Critical Hits ignore enemy hit mass from armour, and grant +10% melee critical damage.</li>
+                    </ul>
+                </div>
+
+                <!-- Dueling Swords & Blaze Force Swords -->
+                 <div class="weapon-card rounded-lg p-6">
+                    <h3 class="text-2xl font-semibold mb-4">Dueling Swords & Blaze Force Swords</h3>
+                     <img src="https://warhammer-40k-darktide.fandom.com/wiki/Special:FilePath/Duelling_Sword_Mk_IV.png" alt="Dueling Sword" class="mx-auto my-4 rounded-lg" style="max-height: 150px;">
+                    <ul class="list-disc list-inside space-y-2">
+                        <li><strong class="blessing-tag rounded-md px-2 py-1">Precognition:</strong> Gain +60% Finesse damage on successful dodge.</li>
+                    </ul>
+                </div>
+
+                <!-- Power Falchions -->
+                <div class="weapon-card rounded-lg p-6">
+                    <h3 class="text-2xl font-semibold mb-4">Power Falchions</h3>
+                    <img src="https://warhammer-40k-darktide.fandom.com/wiki/Special:FilePath/Indignatus_Mk_IVe_Crusher.png" alt="Power Falchion" class="mx-auto my-4 rounded-lg" style="max-height: 150px;">
+                    <ul class="list-disc list-inside space-y-2">
+                        <li><strong class="blessing-tag rounded-md px-2 py-1">Heat Sink:</strong> Weakspot kills and Critical Hit kills reduce heat by a percentage over 3s.</li>
+                    </ul>
+                </div>
+
+                 <!-- Laspistol & Grenade Gauntlet -->
+                <div class="weapon-card rounded-lg p-6">
+                    <h3 class="text-2xl font-semibold mb-4">Laspistol & Grenade Gauntlet</h3>
+                     <img src="https://warhammer-40k-darktide.fandom.com/wiki/Special:FilePath/Accatran_Mk_II_Laspistol.png" alt="Laspistol" class="mx-auto my-4 rounded-lg" style="max-height: 150px;">
+                    <ul class="list-disc list-inside space-y-2">
+                        <li><strong class="blessing-tag rounded-md px-2 py-1">Infernus (Laspistol):</strong> Apply Burn stacks on critical hits.</li>
+                        <li><strong class="blessing-tag rounded-md px-2 py-1">Reassuringly Accurate:</strong> Gain a percentage of toughness back on a critical hit kill.</li>
+                    </ul>
+                     <p class="mt-4 text-sm text-gray-400 italic">"A lot of these are new! I'm pretty sure Infernus used to be the las pistol's only crit blessing. I must have missed the patch notes when this happened"</p>
+                </div>
+
+                 <!-- Plasma Guns -->
+                <div class="weapon-card rounded-lg p-6">
+                    <h3 class="text-2xl font-semibold mb-4">Plasma Guns</h3>
+                    <img src="https://warhammer-40k-darktide.fandom.com/wiki/Special:FilePath/Rumbler_Mk_III_Grenadier_Gauntlet.png" alt="Plasma Gun" class="mx-auto my-4 rounded-lg" style="max-height: 150px;">
+                    <ul class="list-disc list-inside space-y-2">
+                        <li><strong class="blessing-tag rounded-md px-2 py-1">Gets Hot!:</strong> Critical chance scales up to +10% based on heat level, and adds +10% ranged critical hit damage.</li>
+                         <li><strong class="blessing-tag rounded-md px-2 py-1">Focused Cooling:</strong> +60% heat generation on critical hit. (Note: Graham suspects this might be a typo)</li>
+                    </ul>
+                </div>
+
+                <!-- Twin-linked Heavy Stubbers -->
+                <div class="weapon-card rounded-lg p-6">
+                    <h3 class="text-2xl font-semibold mb-4">Twin-linked Heavy Stubbers</h3>
+                    <img src="https://warhammer-40k-darktide.fandom.com/wiki/Special:FilePath/Achelas_Mk_VII_Twin-Linked_Heavy_Stubber.png" alt="Twin-linked Heavy Stubber" class="mx-auto my-4 rounded-lg" style="max-height: 150px;">
+                    <ul class="list-disc list-inside space-y-2">
+                        <li><strong class="blessing-tag rounded-md px-2 py-1">Charmed Reload:</strong> Load 5 bullets from reserve on a critical hit.</li>
+                    </ul>
+                </div>
+
+                <!-- Psyker Force Swords (Blaze) -->
+                <div class="weapon-card rounded-lg p-6">
+                    <h3 class="text-2xl font-semibold mb-4">Psyker Force Swords (Blaze)</h3>
+                    <img src="https://warhammer-40k-darktide.fandom.com/wiki/Special:FilePath/Obscurus_Mk_II_Blaze_Force_Sword.png" alt="Blaze Force Sword" class="mx-auto my-4 rounded-lg" style="max-height: 150px;">
+                    <ul class="list-disc list-inside space-y-2">
+                        <li><strong class="blessing-tag rounded-md px-2 py-1">Blazing Spirit:</strong> Enemies gain 4 stacks of Soul Blaze on a critical hit, to a maximum of 12 stacks.</li>
+                        <li><strong class="blessing-tag rounded-md px-2 py-1">Warp Slice (Greatsword):</strong> Guaranteed Activated Critical Strike on a 15s cooldown.</li>
+                    </ul>
+                </div>
+
+                <!-- Psyker Force Staves -->
+                <div class="weapon-card rounded-lg p-6">
+                    <h3 class="text-2xl font-semibold mb-4">Psyker Force Staves</h3>
+                    <img src="https://warhammer-40k-darktide.fandom.com/wiki/Special:FilePath/Equinox_Mk_III_Voidstrike_Force_Staff.png" alt="Voidstrike Force Staff" class="mx-auto my-4 rounded-lg" style="max-height: 150px;">
+                    <ul class="list-disc list-inside space-y-2">
+                        <li><strong class="blessing-tag rounded-md px-2 py-1">Surge (Voidblast, Electrokinetic, Voidstrike):</strong> Fire 2 shots on a primary critical hit. Also increases ranged critical chance.</li>
+                        <li><strong class="blessing-tag rounded-md px-2 py-1">Blazing Spirit (Voidblast, Voidstrike):</strong> Enemies gain 4 stacks of Soul Blaze on a critical hit.</li>
+                    </ul>
+                </div>
+
+                <!-- Heavy Eviscerators -- >
+                <div class="weapon-card rounded-lg p-6">
+                    <h3 class="text-2xl font-semibold mb-4">Heavy Eviscerators</h3>
+                    <img src="https://warhammer-40k-darktide.fandom.com/wiki/Special:FilePath/Tigrus_Mk_II_Heavy_Eviscerator.png" alt="Heavy Eviscerator" class="mx-auto my-4 rounded-lg" style="max-height: 150px;">
+                    <ul class="list-disc list-inside space-y-2">
+                        <li><strong class="blessing-tag rounded-md px-2 py-1">Perfect Strike:</strong> Critical Hits ignore enemy hit mass from armour, and grant +10% melee critical damage.</li>
+                    </ul>
+                </div -- >
+
+                 <!-- Relic Blades & Bully Clubs -- >
+                <div class="weapon-card rounded-lg p-6">
+                    <h3 class="text-2xl font-semibold mb-4">Relic Blades & Bully Clubs</h3>
+                    <img src="https://warhammer-40k-darktide.fandom.com/wiki/Special:FilePath/Cadia_Mk_IV_Assault_Chainsword.png" alt="Relic Blade" class="mx-auto my-4 rounded-lg" style="max-height: 150px;">
+                    <ul class="list-disc list-inside space-y-2">
+                        <li><strong class="blessing-tag rounded-md px-2 py-1">Devastating Strike (Relic Blades):</strong> Gain +80% cleave for 5 seconds on a critical hit.</li>
+                        <li><strong class="blessing-tag rounded-md px-2 py-1">Heatsink (Relic Blades):</strong> Critical hit kills reduce heat.</li>
+                        <li><strong class="blessing-tag rounded-md px-2 py-1">Perfect Strike (Bully Clubs):</strong> Critical Hits ignore enemy hit mass from armour, and grant +10% melee critical damage.</li>
+                    </ul>
+                </div -- >
+
+                <!-- Flamers -->
+                <div class="weapon-card rounded-lg p-6">
+                    <h3 class="text-2xl font-semibold mb-4">Flamers</h3>
+                    <img src="https://warhammer-40k-darktide.fandom.com/wiki/Special:FilePath/Purgatus_Mk_II_Force_Staff.png" alt="Flamer" class="mx-auto my-4 rounded-lg" style="max-height: 150px;">
+                    <ul class="list-disc list-inside space-y-2">
+                        <li><strong class="blessing-tag rounded-md px-2 py-1">Everlasting Flame:</strong> Critical hits expend ammo from your reserve rather than the magazine.</li>
+                    </ul>
+                </div>
+
+            </div>
+
+            <h2 class="text-3xl font-semibold border-b-2 border-gray-600 pb-2 mb-8 mt-16">Honourable Mentions: Crit Chance Boosters</h2>
+             <p class="mb-10 text-gray-300">While the weapons above benefit *from* crits, the blessings on the following weapons are notable for their ability to *increase* the chance of landing them in the first place, setting the stage for devastating combos.</p>
+            
+            <div class="space-y-6">
+
+                <div class="honorable-mention-card p-4 rounded-md">
+                    <p><strong>Universal Blessings:</strong> <span class="blessing-tag rounded-md px-2 py-1">Shred</span> (Bonus crit chance on chained hits) is found on Combat Axes, Tactical Axes, Chainswords, Devil's Claw Swords, Dueling Swords, Heavy Eviscerators, and Blaze Force Swords/Greatswords. <span class="blessing-tag rounded-md px-2 py-1">Surgical</span> is available for Quickdraw Stub Revolvers, Vigilant Autoguns, Bolt Pistols, Boltguns, Helbore Lasguns, Kickbacks, and Heavy Stubbers.</p>
+                </div>
+                
+                <div class="honorable-mention-card p-4 rounded-md">
+                    <p><strong>Chainswords / Chainaxes / Blaze Force Swords:</strong> <span class="blessing-tag rounded-md px-2 py-1">Bloodthirsty</span> grants +100% critical chance on the next melee attack after a special attack kill.</p>
+                </div>
+
+                <div class="honorable-mention-card p-4 rounded-md">
+                    <p><strong>Shotguns (Exterminator, Combat, Riot Shield, Double-barreled):</strong> <span class="blessing-tag rounded-md px-2 py-1">Scattershot</span> gives +12% critical chance for each enemy hit by the previous attack, stacking up to 5 times.</p>
+                </div>
+
+                <div class="honorable-mention-card p-4 rounded-md">
+                     <p><strong>Quickdraw Stub Revolvers / Vigilant Autoguns:</strong> <span class="blessing-tag rounded-md px-2 py-1">Crucian Roulette</span> offers +6% (or 0.6% for Autoguns) critical chance for each empty round in the magazine.</p>
+                </div>
+                
+                 <div class="honorable-mention-card p-4 rounded-md">
+                     <p><strong>Revolvers / Bolt Pistols:</strong> <span class="blessing-tag rounded-md px-2 py-1">Point Blank</span> provides +20% crit chance for 2.5 seconds after a melee kill.</p>
+                </div>
+
+                 <div class="honorable-mention-card p-4 rounded-md">
+                    <p><strong>Vigilant Autoguns / Heavy Stubbers / Lasguns (Infantry, Recon):</strong> <span class="blessing-tag rounded-md px-2 py-1">Headhunter</span> grants +20% critical chance on a weakspot hit until the next critical hit, stacking 5 times.</p>
+                </div>
+
+                <div class="honorable-mention-card p-4 rounded-md">
+                    <p><strong>Shredder Autopistols / Boltguns / Ripper Guns / Heavy Stubbers:</strong> <span class="blessing-tag rounded-md px-2 py-1">Cavalcade</span> increases crit chance for every 10% of the magazine spent during continuous fire.</p>
+                </div>
+
+                <div class="honorable-mention-card p-4 rounded-md">
+                    <p><strong>Combat Blades / Dueling Swords / Blaze Force Swords:</strong> <span class="blessing-tag rounded-md px-2 py-1">Riposte</span> grants +20% critical chance on a successful dodge. Blades and Bully Clubs also get <span class="blessing-tag rounded-md px-2 py-1">Smackdown</span> for +20% crit chance on staggering an enemy with a special action.</p>
+                </div>
+
+                 <div class="honorable-mention-card p-4 rounded-md">
+                    <p><strong>Heavy Swords:</strong> <span class="blessing-tag rounded-md px-2 py-1">Chained Deathblow</span> gives +20% critical chance on a weakspot kill.</p>
+                </div>
+                
+                <div class="honorable-mention-card p-4 rounded-md">
+                    <p><strong>Laspistol:</strong> Features <span class="blessing-tag rounded-md px-2 py-1">Concentrated Fire</span> (+crit chance on chained weakspot hits) and <span class="blessing-tag rounded-md px-2 py-1">Desperado</span> (+crit chance on successful dodge).</p>
+                </div>
+
+                <div class="honorable-mention-card p-4 rounded-md">
+                    <p><strong>Latrine Shovels / Cleavers:</strong> Shovels have <span class="blessing-tag rounded-md px-2 py-1">Sucker Punch</span> (+crit chance on special action hit). Cleavers have <span class="blessing-tag rounded-md px-2 py-1">Bash</span> (+crit chance on pushing enemies).</p>
+                </div>
+
+                <div class="honorable-mention-card p-4 rounded-md">
+                    <p><strong>Grenade Gauntlets:</strong> <span class="blessing-tag rounded-md px-2 py-1">Pulverise</span> grants +25% critical chance on a melee kill.</p>
+                </div>
+
+                <div class="honorable-mention-card p-4 rounded-md">
+                    <p><strong>Plasma Guns:</strong> <span class="blessing-tag rounded-md px-2 py-1">Power Blast</span> gives between 5% and 25% critical chance based on charge level when firing.</p>
+                </div>
+
+                <div class="honorable-mention-card p-4 rounded-md">
+                    <p><strong>Psyker Force Staves:</strong> <span class="blessing-tag rounded-md px-2 py-1">Warp Nexus</span> provides critical chance based on current Peril. Certain staves also get <span class="blessing-tag rounded-md px-2 py-1">Surge</span> for bonus crit chance and extra shots.</p>
+                </div>
+
+            </div>
+        </main>
+        
+        <footer class="text-center mt-12 pt-8 border-t border-gray-700">
+            <p class="text-gray-500">All information based on community findings. Data sourced from the <a href="https://warhammer-40k-darktide.fandom.com/wiki/Warhammer_40K_Darktide_Wiki" class="text-blue-400 hover:underline">Darktide Wiki</a>.</p>
+        </footer>
+
+    </div>
+</body>
+</html>
+
