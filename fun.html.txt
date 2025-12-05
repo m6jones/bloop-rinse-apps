@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neon Rune Rush - High Juice Hybrid Casual</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Rajdhani:wght@500;700&display=swap');
+
+        body {
+            background-color: #050505;
+            color: white;
+            overflow: hidden;
+            touch-action: none; /* Prevent default touch actions like scrolling */
+            font-family: 'Rajdhani', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        #gameCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* UI Overlays */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none; /* Let touches pass through to canvas */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .hud-text {
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+        }
+
+        /* Thumb Zone Button */
+        #panic-btn {
+            pointer-events: auto;
+            transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        #panic-btn:active {
+            transform: scale(0.9);
+        }
+        
+        .shake {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        /* Start Screen */
+        #start-screen {
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(5px);
+            pointer-events: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Canvas for Gameplay -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- UI Layer -->
+    <div id="ui-layer" class="p-4">
+        <!-- Top HUD -->
+        <div class="flex justify-between items-start w-full">
+            <div>
+                <div class="text-sm text-gray-400">SCORE</div>
+                <div id="score-display" class="text-3xl font-bold hud-text text-cyan-400">0</div>
+            </div>
+            <div class="text-right">
+                <div class="text-sm text-gray-400">COMBO</div>
+                <div id="combo-display" class="text-3xl font-bold hud-text text-yellow-400">x0</div>
+            </div>
+        </div>
+
+        <!-- Center Message Area (for Hit Stop/Feedback) -->
+        <div id="feedback-msg" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-4xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-400 opacity-0 transition-opacity duration-200 pointer-events-none" style="font-family: 'Black Ops One', cursive;">
+            NICE!
+        </div>
+
+        <!-- Bottom Thumb Zone (Ergonomic) -->
+        <div class="w-full flex justify-center pb-8">
+            <!-- Panic Button: Only touchable UI element -->
+            <button id="panic-btn" class="relative group w-20 h-20 rounded-full bg-gray-800 border-4 border-gray-600 flex items-center justify-center shadow-[0_0_20px_rgba(0,0,0,0.5)] overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                <!-- Fill Effect -->
+                <div id="panic-fill" class="absolute bottom-0 left-0 w-full bg-red-500 transition-all duration-300" style="height: 0%"></div>
+                <!-- Icon -->
+                <div class="relative z-10 text-white font-bold text-xl tracking-tighter">BLAST</div>
+                <!-- Ring Pulse -->
+                <div id="panic-glow" class="absolute inset-0 rounded-full border-4 border-red-500 opacity-0"></div>
+            </button>
+        </div>
+    </div>
+
+    <!-- Start / Game Over Screen -->
+    <div id="start-screen" class="absolute inset-0 flex flex-col items-center justify-center z-50 text-center p-6">
+        <h1 class="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500 mb-2" style="font-family: 'Black Ops One', cursive;">NEON RUNE</h1>
+        <p class="text-gray-300 mb-8 max-w-md text-lg">Draw the symbols on the enemies to destroy them.</p>
+        
+        <div class="grid grid-cols-2 gap-4 mb-8 text-gray-400 text-sm">
+            <div class="flex flex-col items-center"><div class="text-2xl text-white mb-1">―</div>Horizontal</div>
+            <div class="flex flex-col items-center"><div class="text-2xl text-white mb-1">|</div>Vertical</div>
+            <div class="flex flex-col items-center"><div class="text-2xl text-white mb-1">V</div>V-Shape</div>
+            <div class="flex flex-col items-center"><div class="text-2xl text-white mb-1">O</div>Circle</div>
+        </div>
+
+        <button id="start-btn" class="px-8 py-4 bg-cyan-500 hover:bg-cyan-400 text-black font-bold text-xl rounded-full shadow-[0_0_30px_rgba(6,182,212,0.6)] transform transition hover:scale-105 active:scale-95">
+            TAP TO START
+        </button>
+    </div>
+
+<script>
+/**
+ * Game Logic & Engine
+ * Implements "Juice" principles: Squash/Stretch, HitStop, ScreenShake, Audio Scaling
+ */
+
+// --- Audio Context for Procedural Sound (No assets needed) ---
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+let audioCtx;
+
+function initAudio() {
+    if (!audioCtx) audioCtx = new AudioContext();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+// Generate sounds procedurally (Synth)
+function playSound(type, pitchMultiplier = 1) {
+    if (!audioCtx) return;
+    
+    const osc = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    
+    osc.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    const now = audioCtx.currentTime;
+
+    if (type === 'hit') {
+        // Satisfaction Pop
+        osc.type = 'sine';
+        // Pitch scaling based on combo (Royal Match mechanic)
+        const baseFreq = 400;
+        osc.frequency.setValueAtTime(baseFreq * pitchMultiplier, now);
+        osc.frequency.exponentialRampToValueAtTime(baseFreq * pitchMultiplier * 2, now + 0.1);
+        
+        gainNode.gain.setValueAtTime(0.3, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+        
+        osc.start(now);
+        osc.stop(now + 0.1);
+    } 
+    else if (type === 'die') {
+        // Explosion/Crunch
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(100, now);
+        osc.frequency.exponentialRampToValueAtTime(0.01, now + 0.2);
+        
+        gainNode.gain.setValueAtTime(0.2, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+        
+        osc.start(now);
+        osc.stop(now + 0.2);
+    }
+    else if (type === 'blast') {
+        // Ultimate ability sound
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(50, now);
+        osc.frequency.linearRampToValueAtTime(800, now + 0.5);
+        
+        gainNode.gain.setValueAtTime(0.5, now);
+        gainNode.gain.linearRampToValueAtTime(0.01, now + 1.0);
+        
+        osc.start(now);
+        osc.stop(now + 1.0);
+    }
+    else if (type === 'draw') {
+        // Subtle swoosh
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(200, now);
+        gainNode.gain.setValueAtTime(0.05, now);
+        gainNode.gain.linearRampToValueAtTime(0, now + 0.05);
+        osc.start(now);
+        osc.stop(now + 0.05);
+    }
+}
+
+// --- Engine Constants ---
+const CANVAS = document.getElementById('gameCanvas');
+const CTX = CANVAS.getContext('2d');
+const SCORE_EL = document.getElementById('score-display');
+const COMBO_EL = document.getElementById('combo-display');
+const PANIC_BTN = document.getElementById('panic-btn');
+const PANIC_FILL = document.getElementById('panic-fill');
+const FEEDBACK_MSG = document.getElementById('feedback-msg');
+
+let width, height;
+let lastTime = 0;
+let gameState = 'start'; // start, playing, gameover
+let score = 0;
+let combo = 0;
+let panicCharge = 0; // 0 to 100
+const MAX_PANIC = 100;
+
+// Juice Variables
+let screenShake = 0;
+let hitStopTimer = 0;
+let timeScale = 1;
+
+// Entities
+let enemies = [];
+let particles = [];
+let strokes = []; // Current drawing path
+let shockwaves = [];
+
+// Configurations
+const SHAPES = ['horz', 'vert', 'circle', 'v'];
+const COLORS = {
+    'horz': '#06b6d4', // Cyan
+    'vert': '#8b5cf6', // Violet
+    'circle': '#facc15', // Yellow
+    'v': '#ef4444'     // Red
+};
+
+// --- Resizing ---
+function resize() {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    CANVAS.width = width;
+    CANVAS.height = height;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// --- Input Handling (Gesture First) ---
+let isDrawing = false;
+
+function getPoint(e) {
+    if(e.touches) {
+        return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }
+    return { x: e.clientX, y: e.clientY };
+}
+
+function startDraw(e) {
+    if (gameState !== 'playing') return;
+    // Don't draw if touching the panic button (handled by button click)
+    if (e.target.closest('#panic-btn')) return;
+
+    isDrawing = true;
+    const p = getPoint(e);
+    strokes = [{x: p.x, y: p.y}];
+    playSound('draw');
+}
+
+function moveDraw(e) {
+    if (!isDrawing) return;
+    const p = getPoint(e);
+    // Distance check to avoid too many points
+    const last = strokes[strokes.length - 1];
+    const dist = Math.hypot(p.x - last.x, p.y - last.y);
+    if (dist > 5) {
+        strokes.push({x: p.x, y: p.y});
+    }
+}
+
+function endDraw(e) {
+    if (!isDrawing) return;
+    isDrawing = false;
+    recognizeShape();
+    setTimeout(() => { strokes = []; }, 100); // Keep trail briefly
+}
+
+CANVAS.addEventListener('mousedown', startDraw);
+CANVAS.addEventListener('mousemove', moveDraw);
+window.addEventListener('mouseup', endDraw);
+
+CANVAS.addEventListener('touchstart', startDraw, {passive: false});
+CANVAS.addEventListener('touchmove', (e) => { e.preventDefault(); moveDraw(e); }, {passive: false});
+window.addEventListener('touchend', endDraw);
+
+// --- Shape Recognition (Simple Heuristics) ---
+function recognizeShape() {
+    if (strokes.length < 5) return;
+
+    let minX = width, maxX = 0, minY = height, maxY = 0;
+    strokes.forEach(p => {
+        if (p.x < minX) minX = p.x;
+        if (p.x > maxX) maxX = p.x;
+        if (p.y < minY) minY = p.y;
+        if (p.y > maxY) maxY = p.y;
+    });
+
+    const w = maxX - minX;
+    const h = maxY - minY;
+    
+    // Check start and end points
+    const start = strokes[0];
+    const end = strokes[strokes.length - 1];
+    const distStartEnd = Math.hypot(start.x - end.x, start.y - end.y);
+
+    let detected = null;
+
+    // Logic Tree
+    if (distStartEnd < (w + h) * 0.25 && strokes.length > 20) {
+        // Start and end are close = Circle
+        detected = 'circle';
+    } else if (w > h * 2.5) {
+        // Wide and short = Horizontal
+        detected = 'horz';
+    } else if (h > w * 2.5) {
+        // Tall and thin = Vertical
+        detected = 'vert';
+    } else {
+        // Check for V (Down then Up)
+        // Find lowest point index
+        let lowestY = -1;
+        let lowestIdx = -1;
+        strokes.forEach((p, i) => {
+            if (p.y > lowestY) {
+                lowestY = p.y;
+                lowestIdx = i;
+            }
+        });
+        
+        // If lowest point is somewhat in the middle (between 20% and 80% of stroke)
+        if (lowestIdx > strokes.length * 0.2 && lowestIdx < strokes.length * 0.8) {
+             // Basic V check
+             detected = 'v';
+        }
+    }
+
+    if (detected) {
+        processAction(detected);
+    }
+}
+
+function processAction(shape) {
+    // Find closest enemy with this shape
+    let target = null;
+    let closestDist = Infinity;
+
+    // Center of screen as reference for "closest threat"
+    const centerX = width / 2;
+    const centerY = height / 2;
+
+    enemies.forEach(e => {
+        if (e.shape === shape) {
+            const dist = Math.hypot(e.x - centerX, e.y - centerY);
+            if (dist < closestDist) {
+                closestDist = dist;
+                target = e;
+            }
+        }
+    });
+
+    if (target) {
+        killEnemy(target);
+        
+        // Visual Feedback for recognition center
+        createShockwave(
+            (strokes[0].x + strokes[strokes.length-1].x)/2, 
+            (strokes[0].y + strokes[strokes.length-1].y)/2, 
+            COLORS[shape]
+        );
+    } else {
+        // Break combo if miss
+        combo = 0;
+        updateUI();
+    }
+}
+
+// --- Gameplay Mechanics ---
+
+function spawnEnemy() {
+    const edge = Math.floor(Math.random() * 4); // 0:top, 1:right, 2:bottom, 3:left
+    const shape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+    const size = 30 + Math.random() * 10;
+    
+    let x, y, dx, dy;
+    const speed = 1 + (score / 500); // Difficulty ramp
+
+    if (edge === 0) { x = Math.random() * width; y = -50; }
+    else if (edge === 1) { x = width + 50; y = Math.random() * height; }
+    else if (edge === 2) { x = Math.random() * width; y = height + 50; }
+    else { x = -50; y = Math.random() * height; }
+
+    const angle = Math.atan2((height/2) - y, (width/2) - x);
+    
+    enemies.push({
+        x, y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        shape,
+        size,
+        color: COLORS[shape],
+        spawnTime: Date.now(),
+        wobbleOffset: Math.random() * 10
+    });
+}
+
+function killEnemy(enemy) {
+    // 1. Logic
+    enemies = enemies.filter(e => e !== enemy);
+    score += 10 + (combo * 2);
+    combo++;
+    panicCharge = Math.min(MAX_PANIC, panicCharge + 10);
+    
+    // 2. Audio Juice (Pitch Scaling)
+    // Pitch rises with combo, caps at 2.0x
+    const pitch = 1 + Math.min(combo * 0.1, 1.0);
+    playSound('hit', pitch);
+    playSound('die', 0.5);
+
+    // 3. Visual Juice (Particles)
+    for(let i=0; i<15; i++) {
+        particles.push({
+            x: enemy.x,
+            y: enemy.y,
+            vx: (Math.random() - 0.5) * 10,
+            vy: (Math.random() - 0.5) * 10,
+            life: 1.0,
+            color: enemy.color,
+            size: Math.random() * 5 + 2
+        });
+    }
+
+    // 4. Hit Stop (Freeze Frame)
+    // Slight pause to emphasize impact
+    hitStopTimer = 0.05; // 50ms freeze
+    timeScale = 0.1;
+
+    // 5. Screen Shake
+    screenShake = 10;
+
+    // 6. UI Pop
+    updateUI();
+    showFeedback();
+}
+
+function usePanic() {
+    if (panicCharge < MAX_PANIC) return;
+    
+    playSound('blast');
+    screenShake = 30;
+    
+    // Create massive shockwave
+    shockwaves.push({x: width/2, y: height/2, r: 10, maxR: Math.max(width, height), alpha: 1});
+
+    // Kill all enemies
+    enemies.forEach(e => {
+        // Spawn particles for each
+        for(let i=0; i<5; i++) {
+            particles.push({
+                x: e.x,
+                y: e.y,
+                vx: (Math.random() - 0.5) * 15,
+                vy: (Math.random() - 0.5) * 15,
+                life: 1.0,
+                color: e.color,
+                size: Math.random() * 4
+            });
+        }
+    });
+    
+    score += enemies.length * 10;
+    enemies = [];
+    panicCharge = 0;
+    updateUI();
+}
+
+function createShockwave(x, y, color) {
+    shockwaves.push({x, y, r: 5, maxR: 100, alpha: 1, color: color || 'white'});
+}
+
+function updateUI() {
+    SCORE_EL.innerText = score;
+    COMBO_EL.innerText = "x" + combo;
+    COMBO_EL.style.transform = `scale(${1 + Math.min(combo*0.1, 0.5)})`;
+    COMBO_EL.style.color = combo > 5 ? '#facc15' : '#ffffff';
+
+    PANIC_FILL.style.height = `${(panicCharge / MAX_PANIC) * 100}%`;
+    PANIC_BTN.disabled = panicCharge < MAX_PANIC;
+    
+    if (panicCharge >= MAX_PANIC) {
+        document.getElementById('panic-glow').classList.add('animate-ping');
+        document.getElementById('panic-glow').style.opacity = 1;
+    } else {
+        document.getElementById('panic-glow').classList.remove('animate-ping');
+        document.getElementById('panic-glow').style.opacity = 0;
+    }
+}
+
+function showFeedback() {
+    if (combo > 1 && combo % 5 === 0) {
+        const words = ['SWEET', 'EPIC', 'RADICAL', 'GODLIKE'];
+        FEEDBACK_MSG.innerText = words[Math.min(Math.floor(combo/5)-1, words.length-1)] + "!";
+        FEEDBACK_MSG.style.opacity = 1;
+        FEEDBACK_MSG.style.transform = "translate(-50%, -50%) scale(1.5)";
+        setTimeout(() => {
+            FEEDBACK_MSG.style.opacity = 0;
+            FEEDBACK_MSG.style.transform = "translate(-50%, -50%) scale(1)";
+        }, 500);
+    }
+}
+
+// --- Main Loop ---
+
+function gameLoop(timestamp) {
+    if (!lastTime) lastTime = timestamp;
+    let dt = (timestamp - lastTime) / 1000;
+    lastTime = timestamp;
+
+    // Hit Stop Logic
+    if (hitStopTimer > 0) {
+        hitStopTimer -= dt;
+        if (hitStopTimer <= 0) {
+            timeScale = 1;
+        } else {
+            dt *= timeScale; // Slow down logic during hitstop
+        }
+    }
+
+    if (gameState === 'playing') {
+        update(dt);
+        draw();
+        
+        // Shake decay
+        if (screenShake > 0) screenShake *= 0.9;
+        if (screenShake < 0.5) screenShake = 0;
+
+        requestAnimationFrame(gameLoop);
+    }
+}
+
+let spawnTimer = 0;
+
+function update(dt) {
+    // Spawning
+    spawnTimer -= dt;
+    if (spawnTimer <= 0) {
+        spawnEnemy();
+        // Spawn rate increases with score
+        spawnTimer = Math.max(0.5, 2.0 - (score / 1000)); 
+    }
+
+    // Entities
+    // Squash and stretch animation phase
+    const time = Date.now() / 200;
+
+    enemies.forEach(e => {
+        e.x += e.vx * dt;
+        e.y += e.vy * dt;
+        
+        // Collision with center (Game Over)
+        const distToCenter = Math.hypot(e.x - width/2, e.y - height/2);
+        if (distToCenter < 30) {
+            gameOver();
+        }
+    });
+
+    // Particles
+    particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= dt * 2;
+        p.vy += 0.2; // Gravity
+    });
+    particles = particles.filter(p => p.life > 0);
+
+    // Shockwaves
+    shockwaves.forEach(s => {
+        s.r += dt * 500;
+        s.alpha -= dt * 2;
+    });
+    shockwaves = shockwaves.filter(s => s.alpha > 0);
+}
+
+function draw() {
+    // Clear with trail effect for "neon" feel
+    CTX.fillStyle = 'rgba(5, 5, 10, 0.3)';
+    CTX.fillRect(0, 0, width, height);
+
+    CTX.save();
+
+    // Screen Shake
+    if (screenShake > 0) {
+        const dx = (Math.random() - 0.5) * screenShake;
+        const dy = (Math.random() - 0.5) * screenShake;
+        CTX.translate(dx, dy);
+    }
+
+    // Draw Center Base
+    CTX.beginPath();
+    CTX.arc(width/2, height/2, 20, 0, Math.PI*2);
+    CTX.fillStyle = '#22d3ee';
+    CTX.fill();
+    CTX.shadowBlur = 20;
+    CTX.shadowColor = '#22d3ee';
+    CTX.strokeStyle = 'white';
+    CTX.stroke();
+    CTX.shadowBlur = 0;
+
+    // Draw Player Trail (The Drawing)
+    if (strokes.length > 1) {
+        CTX.beginPath();
+        CTX.moveTo(strokes[0].x, strokes[0].y);
+        for(let i=1; i<strokes.length; i++) {
+            CTX.lineTo(strokes[i].x, strokes[i].y);
+        }
+        CTX.strokeStyle = 'white';
+        CTX.lineWidth = 4;
+        CTX.lineCap = 'round';
+        CTX.lineJoin = 'round';
+        CTX.shadowColor = '#e879f9';
+        CTX.shadowBlur = 15;
+        CTX.stroke();
+        CTX.shadowBlur = 0;
+    }
+
+    // Draw Enemies
+    enemies.forEach(e => {
+        CTX.save();
+        CTX.translate(e.x, e.y);
+        
+        // Squash and Stretch Logic (Juice)
+        // Stretch in direction of movement
+        const speed = Math.hypot(e.vx, e.vy);
+        const stretch = 1 + (speed * 0.005);
+        const angle = Math.atan2(e.vy, e.vx);
+        
+        CTX.rotate(angle);
+        CTX.scale(stretch, 1/stretch);
+        CTX.rotate(-angle);
+
+        // Draw Shape container
+        CTX.beginPath();
+        CTX.arc(0, 0, e.size, 0, Math.PI*2);
+        CTX.fillStyle = 'rgba(20,20,30,0.8)';
+        CTX.fill();
+        CTX.strokeStyle = e.color;
+        CTX.lineWidth = 3;
+        CTX.stroke();
+
+        // Draw Symbol inside
+        CTX.strokeStyle = 'white';
+        CTX.lineWidth = 4;
+        CTX.beginPath();
+        if (e.shape === 'horz') {
+            CTX.moveTo(-10, 0); CTX.lineTo(10, 0);
+        } else if (e.shape === 'vert') {
+            CTX.moveTo(0, -10); CTX.lineTo(0, 10);
+        } else if (e.shape === 'circle') {
+            CTX.arc(0, 0, 8, 0, Math.PI*2);
+        } else if (e.shape === 'v') {
+            CTX.moveTo(-8, -5); CTX.lineTo(0, 5); CTX.lineTo(8, -5);
+        }
+        CTX.stroke();
+        
+        CTX.restore();
+    });
+
+    // Draw Particles
+    particles.forEach(p => {
+        CTX.globalAlpha = p.life;
+        CTX.fillStyle = p.color;
+        CTX.beginPath();
+        CTX.arc(p.x, p.y, p.size, 0, Math.PI*2);
+        CTX.fill();
+        CTX.globalAlpha = 1;
+    });
+
+    // Draw Shockwaves
+    shockwaves.forEach(s => {
+        CTX.beginPath();
+        CTX.arc(s.x, s.y, s.r, 0, Math.PI*2);
+        CTX.strokeStyle = s.color || 'white';
+        CTX.lineWidth = 2; // Thin expanding ring
+        CTX.globalAlpha = s.alpha;
+        CTX.stroke();
+        CTX.globalAlpha = 1;
+    });
+
+    CTX.restore();
+}
+
+function gameOver() {
+    gameState = 'gameover';
+    document.getElementById('start-screen').style.display = 'flex';
+    document.querySelector('#start-screen h1').innerText = "GAME OVER";
+    document.querySelector('#start-screen p').innerText = `Final Score: ${score}`;
+    document.getElementById('start-btn').innerText = "RETRY";
+}
+
+function startGame() {
+    initAudio();
+    gameState = 'playing';
+    score = 0;
+    combo = 0;
+    enemies = [];
+    particles = [];
+    shockwaves = [];
+    panicCharge = 50; // Start with half charge
+    updateUI();
+    document.getElementById('start-screen').style.display = 'none';
+    lastTime = performance.now();
+    requestAnimationFrame(gameLoop);
+}
+
+// Listeners
+document.getElementById('start-btn').addEventListener('click', startGame);
+PANIC_BTN.addEventListener('mousedown', (e) => { e.stopPropagation(); usePanic(); });
+PANIC_BTN.addEventListener('touchstart', (e) => { e.stopPropagation(); usePanic(); });
+
+</script>
+</body>
+</html>
+
