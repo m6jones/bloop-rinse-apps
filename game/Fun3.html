@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neon Rune Rush - Risk/Reward</title>
+    <style>
+        :root {
+            --bg-color: #020205;
+            --text-color: #ffffff;
+            --neon-cyan: #06b6d4;
+            --neon-purple: #8b5cf6;
+            --neon-yellow: #facc15;
+            --neon-red: #ef4444;
+            --neon-orange: #f97316;
+            --font-main: 'Arial', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0; padding: 0;
+            overflow: hidden;
+            touch-action: none;
+            font-family: var(--font-main);
+            user-select: none;
+            -webkit-user-select: none;
+            width: 100vw; height: 100vh;
+            transition: background-color 0.5s, filter 0.2s;
+        }
+
+        body.fever-mode {
+            background-color: #fffbe6;
+            --text-color: #000;
+        }
+
+        /* Slow Mo Effect */
+        body.slow-mo {
+            filter: grayscale(0.6) contrast(1.2);
+        }
+
+        #gameCanvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: block;
+            z-index: 1;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 10;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 16px;
+            box-sizing: border-box;
+        }
+
+        .hud-row { display: flex; justify-content: space-between; width: 100%; }
+        .hud-item { display: flex; flex-direction: column; }
+        .hud-label { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+        .hud-value { font-size: 32px; font-weight: bold; text-shadow: 0 0 10px rgba(255, 255, 255, 0.3); }
+
+        body.fever-mode .hud-value { color: #d97706 !important; text-shadow: none; }
+        body.fever-mode .hud-label { color: #000; }
+
+        #score-display { color: var(--neon-cyan); }
+        #combo-display { color: var(--neon-yellow); text-align: right; }
+        
+        #fever-bar-container {
+            position: absolute; top: 70px; left: 50%; transform: translateX(-50%);
+            width: 200px; height: 6px; background: rgba(255,255,255,0.1);
+            border-radius: 3px; overflow: hidden; opacity: 0; transition: opacity 0.3s;
+        }
+        #fever-bar {
+            width: 0%; height: 100%; background: #facc15;
+            box-shadow: 0 0 10px #facc15;
+        }
+
+        #feedback-msg {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 48px; font-weight: 900; font-style: italic;
+            color: white; opacity: 0;
+            text-shadow: 0 0 20px var(--neon-purple);
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        body.fever-mode #feedback-msg { color: #d97706; text-shadow: 0 0 0; }
+
+        .bottom-zone { width: 100%; display: flex; justify-content: center; padding-bottom: 20px; }
+
+        #panic-btn {
+            position: relative;
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            background: #1f2937;
+            border: 4px solid #4b5563;
+            color: white; font-weight: bold; font-size: 14px;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden; pointer-events: auto; cursor: pointer;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            transition: transform 0.1s;
+        }
+        #panic-btn:active { transform: scale(0.9); }
+        #panic-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        #panic-fill {
+            position: absolute; bottom: 0; left: 0;
+            width: 100%; height: 0%;
+            background-color: var(--neon-red);
+            transition: height 0.2s linear; z-index: 0;
+        }
+        .btn-text { position: relative; z-index: 1; pointer-events: none; }
+        #panic-glow {
+            position: absolute; top: -4px; left: -4px; right: -4px; bottom: -4px;
+            border-radius: 50%; border: 4px solid var(--neon-red);
+            opacity: 0; animation: ping 1.5s infinite;
+        }
+        @keyframes ping { 75%, 100% { transform: scale(1.4); opacity: 0; } }
+
+        #start-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            z-index: 50; pointer-events: auto; text-align: center;
+        }
+
+        h1 {
+            font-size: 48px;
+            background: linear-gradient(to right, var(--neon-cyan), var(--neon-orange));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            margin: 0 0 10px 0; text-transform: uppercase;
+        }
+        p { color: #ccc; margin-bottom: 30px; }
+
+        .tutorial-grid {
+            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 40px;
+        }
+        .tut-item { display: flex; flex-direction: column; align-items: center; color: #888; font-size: 12px; }
+        .tut-symbol { font-size: 24px; color: white; font-weight: bold; margin-bottom: 5px; }
+        .tut-orange { color: var(--neon-orange); }
+
+        .start-btn {
+            padding: 15px 40px; background-color: var(--neon-cyan);
+            color: black; font-weight: bold; font-size: 18px;
+            border: none; border-radius: 50px; cursor: pointer;
+            box-shadow: 0 0 20px rgba(6,182,212,0.4);
+            transition: transform 0.1s;
+        }
+        .start-btn:active { transform: scale(0.95); }
+        
+        /* Slow-mo indicator */
+        #slow-mo-vignette {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, transparent 50%, rgba(255, 0, 0, 0.3) 100%);
+            opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 5;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="gameCanvas"></canvas>
+    <div id="slow-mo-vignette"></div>
+
+    <div id="ui-layer">
+        <div class="hud-row">
+            <div class="hud-item"><span class="hud-label">Score</span><span id="score-display" class="hud-value">0</span></div>
+            <div class="hud-item" style="align-items: flex-end;"><span class="hud-label">Combo</span><span id="combo-display" class="hud-value">x0</span></div>
+        </div>
+        
+        <div id="fever-bar-container">
+            <div id="fever-bar"></div>
+        </div>
+
+        <div id="feedback-msg">SUPERNOVA!</div>
+
+        <div class="bottom-zone">
+            <button id="panic-btn" disabled>
+                <div id="panic-fill"></div>
+                <span class="btn-text">BLAST</span>
+                <div id="panic-glow"></div>
+            </button>
+        </div>
+    </div>
+
+    <div id="start-screen">
+        <h1>Neon Rune</h1>
+        <p>Close calls trigger Slow-Mo!</p>
+        <div class="tutorial-grid">
+            <div class="tut-item"><span class="tut-symbol">―</span>Horz</div>
+            <div class="tut-item"><span class="tut-symbol">|</span>Vert</div>
+            <div class="tut-item"><span class="tut-symbol">O</span>Circle</div>
+            <div class="tut-item"><span class="tut-symbol">V</span>V-Shape</div>
+            <div class="tut-item"><span class="tut-symbol tut-orange">^</span>Break Shield</div>
+        </div>
+        <button id="start-btn" class="start-btn">TAP TO START</button>
+    </div>
+
+<script>
+// --- Audio Engine ---
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+let audioCtx;
+function initAudio() { if (!audioCtx) audioCtx = new AudioContext(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
+function playSound(type, pitchMultiplier=1) {
+    if (!audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    osc.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    const now = audioCtx.currentTime;
+
+    if (type === 'hit') {
+        osc.type = 'sine';
+        const base = feverTime > 0 ? 600 : 400; 
+        osc.frequency.setValueAtTime(base * pitchMultiplier, now);
+        osc.frequency.exponentialRampToValueAtTime(base * pitchMultiplier * 2, now + 0.1);
+        gainNode.gain.setValueAtTime(0.3, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+        osc.start(now); osc.stop(now + 0.1);
+    } else if (type === 'crack') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(150, now);
+        osc.frequency.exponentialRampToValueAtTime(50, now + 0.15);
+        gainNode.gain.setValueAtTime(0.4, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+        osc.start(now); osc.stop(now + 0.15);
+    } else if (type === 'collect') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800 * pitchMultiplier, now);
+        osc.frequency.linearRampToValueAtTime(1200 * pitchMultiplier, now + 0.1);
+        gainNode.gain.setValueAtTime(0.1, now);
+        gainNode.gain.linearRampToValueAtTime(0.01, now + 0.1);
+        osc.start(now); osc.stop(now + 0.1);
+    } else if (type === 'die') {
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(100, now);
+        osc.frequency.exponentialRampToValueAtTime(0.01, now + 0.2);
+        gainNode.gain.setValueAtTime(0.2, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+        osc.start(now); osc.stop(now + 0.2);
+    } else if (type === 'supernova') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(200, now);
+        osc.frequency.linearRampToValueAtTime(800, now + 0.5);
+        gainNode.gain.setValueAtTime(0.4, now);
+        gainNode.gain.linearRampToValueAtTime(0.01, now + 1.0);
+        osc.start(now); osc.stop(now + 1.0);
+    } else if (type === 'slowmo') {
+        // Low bass thrum
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(50, now);
+        gainNode.gain.setValueAtTime(0.2, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+        osc.start(now); osc.stop(now + 0.5);
+    }
+}
+
+// --- Grid Physics ---
+class GridPoint {
+    constructor(x, y) {
+        this.baseX = x; this.baseY = y; this.x = x; this.y = y;
+        this.vx = 0; this.vy = 0; this.friction = 0.9; this.stiffness = 0.1;
+    }
+    update(dt) {
+        // Adjust physics speed based on time scale
+        let speed = timeScale < 1 ? 0.5 : 1;
+        this.vx += (this.baseX - this.x) * this.stiffness * speed;
+        this.vy += (this.baseY - this.y) * this.stiffness * speed;
+        this.vx *= this.friction; this.vy *= this.friction;
+        this.x += this.vx * speed; this.y += this.vy * speed;
+    }
+    applyForce(originX, originY, force) {
+        const dx = this.x - originX; const dy = this.y - originY;
+        const dist = Math.hypot(dx, dy);
+        if (dist < 300) {
+            const angle = Math.atan2(dy, dx);
+            const strength = (1 - dist / 300) * force;
+            this.vx += Math.cos(angle) * strength; this.vy += Math.sin(angle) * strength;
+        }
+    }
+}
+class WarpGrid {
+    constructor(width, height, spacing) {
+        this.spacing = spacing;
+        this.cols = Math.ceil(width / spacing) + 1;
+        this.rows = Math.ceil(height / spacing) + 1;
+        this.points = [];
+        for (let i = 0; i < this.cols; i++) {
+            this.points[i] = [];
+            for (let j = 0; j < this.rows; j++) this.points[i][j] = new GridPoint(i * spacing, j * spacing);
+        }
+    }
+    update(dt) { for (let i = 0; i < this.cols; i++) for (let j = 0; j < this.rows; j++) this.points[i][j].update(dt); }
+    draw(ctx, isFever) {
+        ctx.strokeStyle = isFever ? 'rgba(217, 119, 6, 0.2)' : 'rgba(139, 92, 246, 0.15)'; 
+        ctx.lineWidth = 1;
+        for (let j = 0; j < this.rows; j++) {
+            ctx.beginPath();
+            for (let i = 0; i < this.cols; i++) {
+                const p = this.points[i][j];
+                if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+            }
+            ctx.stroke();
+        }
+        for (let i = 0; i < this.cols; i++) {
+            ctx.beginPath();
+            for (let j = 0; j < this.rows; j++) {
+                const p = this.points[i][j];
+                if (j === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+            }
+            ctx.stroke();
+        }
+    }
+    explode(x, y, force) { for (let i = 0; i < this.cols; i++) for (let j = 0; j < this.rows; j++) this.points[i][j].applyForce(x, y, force); }
+}
+
+// --- Game Constants ---
+const CANVAS = document.getElementById('gameCanvas');
+const CTX = CANVAS.getContext('2d');
+const UI_SCORE = document.getElementById('score-display');
+const UI_COMBO = document.getElementById('combo-display');
+const BTN_PANIC = document.getElementById('panic-btn');
+const FILL_PANIC = document.getElementById('panic-fill');
+const MSG_FEEDBACK = document.getElementById('feedback-msg');
+const GLOW_PANIC = document.getElementById('panic-glow');
+const FEVER_BAR_CONTAINER = document.getElementById('fever-bar-container');
+const FEVER_BAR = document.getElementById('fever-bar');
+const VIGNETTE = document.getElementById('slow-mo-vignette');
+
+let width, height;
+let lastTime = 0;
+let gameState = 'start';
+let score = 0;
+let combo = 0;
+let panicCharge = 0;
+const MAX_PANIC = 100;
+let screenShake = 0;
+let hitStopTimer = 0;
+let timeScale = 1;
+
+// Risk/Reward
+const DANGER_ZONE_RADIUS = 150;
+let isInDanger = false;
+let slowMoActive = false;
+
+// Fever Mode
+let feverTime = 0;
+const FEVER_DURATION = 6.0; 
+const FEVER_THRESHOLD = 15; 
+
+let enemies = [];
+let particles = [];
+let strokes = [];
+let shockwaves = [];
+let essences = [];
+let grid;
+let collector = { x: 0, y: 0, r: 40, color: '#0ea5e9' };
+
+const COLORS = {
+    'horz': '#06b6d4', 'vert': '#8b5cf6', 'circle': '#facc15', 'v': '#ef4444', 'caret': '#f97316',
+    'fever': '#d97706'
+};
+const BASIC_SHAPES = ['horz', 'vert', 'circle', 'v'];
+
+function resize() {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    CANVAS.width = width;
+    CANVAS.height = height;
+    collector.x = width / 2;
+    collector.y = height / 2;
+    grid = new WarpGrid(width, height, 50);
+}
+window.addEventListener('resize', resize);
+resize();
+
+// --- Input ---
+let isDrawing = false;
+function getPoint(e) { if(e.touches) return {x:e.touches[0].clientX, y:e.touches[0].clientY}; return {x:e.clientX, y:e.clientY}; }
+function startDraw(e) {
+    if(gameState !== 'playing') return;
+    if(e.target.closest('#panic-btn')) return;
+    isDrawing = true;
+    const p = getPoint(e);
+    strokes = [{x:p.x, y:p.y}];
+    if (feverTime <= 0) playSound('draw');
+}
+function moveDraw(e) {
+    if (!e.touches) { collector.x = e.clientX; collector.y = e.clientY; }
+    if(!isDrawing) return;
+    const p = getPoint(e);
+    const last = strokes[strokes.length-1];
+    
+    if (feverTime > 0) {
+        checkSlasherCollision(last, p);
+    }
+
+    if(Math.hypot(p.x-last.x, p.y-last.y) > 5) strokes.push({x:p.x, y:p.y});
+}
+function endDraw() {
+    if(!isDrawing) return;
+    isDrawing = false;
+    if (feverTime <= 0) recognizeShape();
+    setTimeout(() => { strokes = []; }, 100);
+}
+CANVAS.addEventListener('mousedown', startDraw);
+CANVAS.addEventListener('mousemove', moveDraw);
+window.addEventListener('mouseup', endDraw);
+CANVAS.addEventListener('touchstart', startDraw, {passive:false});
+CANVAS.addEventListener('touchmove', (e)=>{e.preventDefault(); moveDraw(e);}, {passive:false});
+window.addEventListener('touchend', endDraw);
+
+function handleOrientation(event) {
+    const tiltX = event.gamma || 0; 
+    const tiltY = event.beta || 0;  
+    const maxTilt = 30;
+    const tx = Math.max(-maxTilt, Math.min(maxTilt, tiltX));
+    const ty = Math.max(-maxTilt, Math.min(maxTilt, tiltY - 45)); 
+    const targetX = (width/2) + (tx / maxTilt) * (width/2);
+    const targetY = (height/2) + (ty / maxTilt) * (height/2);
+    collector.x += (targetX - collector.x) * 0.1;
+    collector.y += (targetY - collector.y) * 0.1;
+}
+
+// --- Logic ---
+function checkSlasherCollision(p1, p2) {
+    enemies.forEach(e => {
+        const dist = pointToSegmentDistance(e.x, e.y, p1.x, p1.y, p2.x, p2.y);
+        if (dist < e.size + 10) { 
+            killEnemy(e);
+            createShockwave(e.x, e.y, COLORS.fever);
+        }
+    });
+}
+
+function pointToSegmentDistance(px, py, x1, y1, x2, y2) {
+    const l2 = (x1-x2)**2 + (y1-y2)**2;
+    if (l2 === 0) return Math.hypot(px-x1, py-y1);
+    let t = ((px-x1)*(x2-x1) + (py-y1)*(y2-y1)) / l2;
+    t = Math.max(0, Math.min(1, t));
+    return Math.hypot(px - (x1 + t*(x2-x1)), py - (y1 + t*(y2-y1)));
+}
+
+function startFever() {
+    feverTime = FEVER_DURATION;
+    playSound('supernova');
+    document.body.classList.add('fever-mode');
+    FEVER_BAR_CONTAINER.style.opacity = 1;
+    screenShake = 20;
+    shockwaves.push({x:width/2, y:height/2, r:10, maxR:width*1.5, alpha:1, color:'#facc15'});
+    showFeedback("SUPERNOVA!");
+}
+
+function endFever() {
+    feverTime = 0;
+    document.body.classList.remove('fever-mode');
+    FEVER_BAR_CONTAINER.style.opacity = 0;
+    combo = 0; 
+    updateUI();
+}
+
+function recognizeShape() {
+    if(strokes.length < 5) return;
+    let minX=width, maxX=0, minY=height, maxY=0;
+    let lowestY = -1, lowestIdx = -1;
+    let highestY = height + 1, highestIdx = -1; 
+    strokes.forEach((p, i) => {
+        if(p.x<minX) minX=p.x; if(p.x>maxX) maxX=p.x;
+        if(p.y<minY) { minY=p.y; highestIdx=i; }
+        if(p.y>maxY) { maxY=p.y; lowestIdx=i; }
+    });
+    const w = maxX-minX; const h = maxY-minY;
+    const dist = Math.hypot(strokes[0].x-strokes[strokes.length-1].x, strokes[0].y-strokes[strokes.length-1].y);
+    let detected = null;
+
+    if(dist < (w+h)*0.25 && strokes.length > 20) detected = 'circle';
+    else if(w > h*2.5) detected = 'horz';
+    else if(h > w*2.5) detected = 'vert';
+    else {
+        if(lowestIdx > strokes.length*0.2 && lowestIdx < strokes.length*0.8) detected='v';
+        else if(highestIdx > strokes.length*0.2 && highestIdx < strokes.length*0.8) detected='caret';
+    }
+    if(detected) processAction(detected);
+}
+
+function processAction(shape) {
+    let target = null, closest = Infinity;
+    const cx = width/2, cy = height/2;
+    enemies.forEach(e => {
+        let match = (e.shield && shape === 'caret') || (!e.shield && e.shape === shape);
+        if (match) {
+            const dist = Math.hypot(e.x-cx, e.y-cy);
+            if(dist < closest) { closest=dist; target=e; }
+        }
+    });
+    if(target) {
+        const center = strokes[Math.floor(strokes.length/2)];
+        if (target.shield) {
+            breakShield(target);
+            createShockwave(center.x, center.y, COLORS.caret);
+        } else {
+            killEnemy(target);
+            createShockwave(center.x, center.y, COLORS[shape]);
+        }
+    } else {
+        combo = 0; updateUI();
+    }
+}
+
+function spawnEnemy() {
+    const edge = Math.floor(Math.random() * 4);
+    let isHeavy = feverTime <= 0 && score > 50 && Math.random() < 0.25;
+    const innerShape = BASIC_SHAPES[Math.floor(Math.random() * BASIC_SHAPES.length)];
+    const size = isHeavy ? 45 : (30 + Math.random() * 10);
+    
+    let x, y;
+    if(edge===0){x=Math.random()*width; y=-60;}
+    else if(edge===1){x=width+60; y=Math.random()*height;}
+    else if(edge===2){x=Math.random()*width; y=height+60;}
+    else{x=-60; y=Math.random()*height;}
+
+    let speed = 150 + (score / 20); 
+    if(isHeavy) speed *= 0.6;
+    if(feverTime > 0) speed *= 1.5; 
+
+    const angle = Math.atan2((height/2)-y, (width/2)-x);
+    
+    enemies.push({
+        x, y, vx: Math.cos(angle)*speed, vy: Math.sin(angle)*speed,
+        shape: innerShape, size,
+        color: feverTime > 0 ? '#000' : COLORS[innerShape],
+        shield: isHeavy
+    });
+}
+
+function breakShield(e) {
+    e.shield = false; e.vx *= 0.2; e.vy *= 0.2;
+    playSound('crack'); screenShake = 10; hitStopTimer = 0.05; grid.explode(e.x, e.y, 100);
+    for(let i=0; i<10; i++) particles.push({x:e.x, y:e.y, vx:(Math.random()-0.5)*150, vy:(Math.random()-0.5)*150, life:0.8, color: COLORS.caret, size: 3});
+}
+
+function killEnemy(enemy) {
+    // Was this a close call?
+    const dist = Math.hypot(enemy.x - width/2, enemy.y - height/2);
+    const wasCloseCall = dist < DANGER_ZONE_RADIUS + 20;
+
+    enemies = enemies.filter(e => e !== enemy);
+    combo++;
+    
+    if (wasCloseCall && !feverTime) {
+        score += 50;
+        showFeedback("CLOSE CALL!");
+        screenShake = 25; // Extra shake
+        // Snap time back instantly for impact
+        timeScale = 1.0; 
+    }
+
+    if (feverTime <= 0 && combo >= FEVER_THRESHOLD) {
+        startFever();
+    }
+
+    playSound('hit', 1+Math.min(combo*0.1, 1.0));
+    playSound('die', 0.5);
+    
+    hitStopTimer = 0.05; 
+    // If not close call, normal impact. If close call, we already handled timescale snap
+    if (!wasCloseCall) timeScale = 0.1; 
+    screenShake = Math.max(screenShake, 15);
+    
+    grid.explode(enemy.x, enemy.y, 100); 
+
+    let pColor = feverTime > 0 ? COLORS.fever : enemy.color;
+    for(let i=0; i<8; i++) {
+        particles.push({x:enemy.x, y:enemy.y, vx:(Math.random()-0.5)*200, vy:(Math.random()-0.5)*200, life:1.0, color: pColor, size:Math.random()*5+2});
+    }
+    
+    let essCount = 3 + Math.floor(combo / 5);
+    if (feverTime > 0) essCount *= 2;
+    spawnEssence(enemy.x, enemy.y, pColor, essCount);
+    
+    updateUI();
+    if (feverTime <= 0 && !wasCloseCall) showFeedback(); 
+}
+
+function spawnEssence(x, y, color, count) {
+    for(let i=0; i<count; i++) essences.push({x, y, vx:(Math.random()-0.5)*200, vy:(Math.random()-0.5)*200, life:5.0, color, collected:false});
+}
+
+function collectEssence(ess) {
+    ess.collected = true; score += (10 + combo) * (feverTime > 0 ? 2 : 1); 
+    panicCharge = Math.min(MAX_PANIC, panicCharge + 5);
+    playSound('collect', 1.0 + (panicCharge/200)); updateUI();
+}
+
+function usePanic() {
+    if(panicCharge<MAX_PANIC) return;
+    playSound('blast'); screenShake = 35;
+    shockwaves.push({x:width/2, y:height/2, r:10, maxR:Math.max(width,height)*1.2, alpha:1, color:'#ef4444'});
+    grid.explode(width/2, height/2, 500);
+    enemies.forEach(e=>{
+        spawnEssence(e.x, e.y, e.color, 5);
+        for(let i=0; i<5; i++) particles.push({x:e.x, y:e.y, vx:(Math.random()-0.5)*300, vy:(Math.random()-0.5)*300, life:1.0, color:e.color, size:3});
+    });
+    enemies = []; panicCharge = 0; updateUI();
+}
+
+function createShockwave(x, y, color) { shockwaves.push({x, y, r:5, maxR:100, alpha:1, color:color||'white'}); }
+
+function updateUI() {
+    UI_SCORE.innerText = score;
+    UI_COMBO.innerText = "x" + combo;
+    UI_COMBO.style.transform = `scale(${1+Math.min(combo*0.1, 0.4)})`;
+    UI_COMBO.style.color = feverTime > 0 ? '#d97706' : (combo>5 ? COLORS.circle : 'white');
+    
+    FILL_PANIC.style.height = `${(panicCharge/MAX_PANIC)*100}%`;
+    BTN_PANIC.disabled = panicCharge < MAX_PANIC;
+    GLOW_PANIC.style.opacity = panicCharge>=MAX_PANIC ? 1 : 0;
+
+    if (feverTime > 0) {
+        let pct = (feverTime / FEVER_DURATION) * 100;
+        FEVER_BAR.style.width = `${pct}%`;
+    }
+}
+
+function showFeedback(text) {
+    if (text) {
+        MSG_FEEDBACK.innerText = text;
+        MSG_FEEDBACK.style.opacity = 1; MSG_FEEDBACK.style.transform = "translate(-50%, -50%) scale(1.4)";
+        setTimeout(()=>{ MSG_FEEDBACK.style.opacity = 0; MSG_FEEDBACK.style.transform = "translate(-50%, -50%) scale(1)"; }, 800);
+    } else if(combo>1 && combo%5===0) {
+        const words = ['SWEET', 'EPIC!', 'RADICAL', 'GODLIKE'];
+        MSG_FEEDBACK.innerText = words[Math.min(Math.floor(combo/5)-1, words.length-1)];
+        MSG_FEEDBACK.style.opacity = 1; MSG_FEEDBACK.style.transform = "translate(-50%, -50%) scale(1.4)";
+        setTimeout(()=>{ MSG_FEEDBACK.style.opacity = 0; MSG_FEEDBACK.style.transform = "translate(-50%, -50%) scale(1)"; }, 600);
+    }
+}
+
+function gameLoop(timestamp) {
+    if(!lastTime) lastTime = timestamp;
+    let dt = (timestamp - lastTime) / 1000;
+    lastTime = timestamp;
+
+    if(hitStopTimer > 0) { 
+        hitStopTimer -= dt; 
+        if(hitStopTimer <= 0) {
+            // Restore time scale (check for slowmo)
+            timeScale = slowMoActive ? 0.2 : 1; 
+        } else {
+            dt *= 0.001; // Effectively pause
+        }
+    } else {
+        dt *= timeScale;
+    }
+
+    if(gameState === 'playing') {
+        update(dt); draw();
+        if(screenShake > 0) screenShake *= 0.9; if(screenShake < 0.5) screenShake = 0;
+        requestAnimationFrame(gameLoop);
+    }
+}
+
+let spawnTimer = 0;
+function update(dt) {
+    spawnTimer -= dt;
+    let threshold = feverTime > 0 ? 0.3 : Math.max(0.5, 2.0 - (score/3000));
+    if(spawnTimer <= 0) { spawnEnemy(); spawnTimer = threshold; }
+    
+    grid.update(dt);
+
+    if (feverTime > 0) {
+        feverTime -= (dt / timeScale); // Use unscaled time for fever duration
+        updateUI();
+        if (feverTime <= 0) endFever();
+    }
+
+    // Check for Danger Zone (Slow Mo)
+    let dangerDetected = false;
+    enemies.forEach(e => {
+        if (!e.shield) { e.vx += (e.vx > 0 ? -1 : 1) * dt * 50; }
+        e.x += e.vx * dt; e.y += e.vy * dt;
+        
+        const dist = Math.hypot(e.x-width/2, e.y-height/2);
+        if (dist < DANGER_ZONE_RADIUS) dangerDetected = true;
+        if (dist < 30) gameOver();
+    });
+
+    // Slow Mo State Logic
+    if (dangerDetected && !slowMoActive && feverTime <= 0) {
+        slowMoActive = true;
+        timeScale = 0.2;
+        playSound('slowmo');
+        document.body.classList.add('slow-mo');
+        VIGNETTE.style.opacity = 1;
+    } else if (!dangerDetected && slowMoActive) {
+        slowMoActive = false;
+        timeScale = 1.0;
+        document.body.classList.remove('slow-mo');
+        VIGNETTE.style.opacity = 0;
+    }
+    // Force normal speed if in fever
+    if (feverTime > 0) {
+        slowMoActive = false;
+        timeScale = 1.0;
+        document.body.classList.remove('slow-mo');
+        VIGNETTE.style.opacity = 0;
+    }
+
+
+    essences.forEach(e => {
+        e.vx *= 0.95; e.vy *= 0.95; e.x += e.vx * dt; e.y += e.vy * dt; e.life -= dt;
+        const dist = Math.hypot(collector.x - e.x, collector.y - e.y);
+        let pickRad = feverTime > 0 ? 250 : 150;
+        if (dist < pickRad) {
+            const angle = Math.atan2(collector.y - e.y, collector.x - e.x);
+            const force = 1000 * dt; e.vx += Math.cos(angle) * force; e.vy += Math.sin(angle) * force;
+        }
+        if (dist < collector.r) collectEssence(e);
+    });
+    essences = essences.filter(e => e.life > 0 && !e.collected);
+
+    particles.forEach(p => { p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt * 2.5; p.vy += 100 * dt; });
+    particles = particles.filter(p => p.life > 0);
+    shockwaves.forEach(s => { s.r += 600 * dt; s.alpha -= 2 * dt; });
+    shockwaves = shockwaves.filter(s => s.alpha > 0);
+}
+
+function draw() {
+    CTX.fillStyle = feverTime > 0 ? 'rgba(255, 251, 230, 0.4)' : 'rgba(2, 2, 5, 0.4)';
+    CTX.fillRect(0, 0, width, height);
+    
+    CTX.save();
+    if(screenShake > 0) CTX.translate((Math.random()-0.5)*screenShake, (Math.random()-0.5)*screenShake);
+
+    grid.draw(CTX, feverTime > 0);
+
+    // Danger Zone Ring (Visible only when threatening)
+    if (feverTime <= 0) {
+        CTX.beginPath(); CTX.arc(width/2, height/2, DANGER_ZONE_RADIUS, 0, Math.PI*2);
+        CTX.strokeStyle = slowMoActive ? 'rgba(239, 68, 68, 0.5)' : 'rgba(239, 68, 68, 0.1)';
+        CTX.lineWidth = 2; CTX.stroke();
+    }
+
+    // Base
+    CTX.beginPath(); CTX.arc(width/2, height/2, 25, 0, Math.PI*2);
+    CTX.fillStyle = feverTime > 0 ? '#000' : '#22d3ee'; CTX.fill(); 
+    CTX.strokeStyle = feverTime > 0 ? '#d97706' : 'white'; CTX.lineWidth = 3; CTX.stroke();
+
+    // Collector
+    CTX.beginPath(); CTX.arc(collector.x, collector.y, collector.r, 0, Math.PI*2);
+    CTX.strokeStyle = feverTime > 0 ? 'rgba(217, 119, 6, 0.5)' : 'rgba(14, 165, 233, 0.5)'; CTX.lineWidth = 2; CTX.setLineDash([5, 5]); CTX.stroke(); CTX.setLineDash([]);
+    CTX.beginPath(); CTX.arc(collector.x, collector.y, collector.r * (0.8 + Math.sin(Date.now()/200)*0.1), 0, Math.PI*2);
+    CTX.strokeStyle = feverTime > 0 ? 'rgba(217, 119, 6, 0.8)' : 'rgba(14, 165, 233, 0.8)'; CTX.stroke();
+
+    // Trail
+    if(strokes.length>1) {
+        CTX.beginPath(); CTX.moveTo(strokes[0].x, strokes[0].y);
+        for(let i=1; i<strokes.length; i++) CTX.lineTo(strokes[i].x, strokes[i].y);
+        CTX.strokeStyle = feverTime > 0 ? '#d97706' : 'white'; 
+        CTX.lineWidth = feverTime > 0 ? 10 : 5; 
+        CTX.lineCap = 'round'; CTX.lineJoin = 'round';
+        CTX.shadowColor = feverTime > 0 ? '#facc15' : '#e879f9'; 
+        CTX.shadowBlur = 15; CTX.stroke(); CTX.shadowBlur = 0;
+    }
+
+    // Enemies
+    enemies.forEach(e => {
+        CTX.save(); CTX.translate(e.x, e.y);
+        const stretch = 1 + (Math.hypot(e.vx, e.vy) * 0.0005);
+        CTX.rotate(Math.atan2(e.vy, e.vx)); CTX.scale(stretch, 1/stretch); CTX.rotate(-Math.atan2(e.vy, e.vx));
+
+        if (e.shield) {
+            CTX.beginPath(); CTX.moveTo(0, -e.size-10); CTX.lineTo(e.size+10, e.size+5); CTX.lineTo(-e.size-10, e.size+5); CTX.closePath();
+            CTX.strokeStyle = COLORS.caret; CTX.lineWidth = 4; CTX.stroke();
+            CTX.shadowColor = COLORS.caret; CTX.shadowBlur = 15; CTX.stroke(); CTX.shadowBlur = 0;
+            CTX.beginPath(); CTX.moveTo(-10, 10); CTX.lineTo(0, -10); CTX.lineTo(10, 10);
+            CTX.strokeStyle = COLORS.caret; CTX.lineWidth = 4; CTX.stroke();
+        } 
+        
+        CTX.globalAlpha = e.shield ? 0.4 : 1.0;
+        CTX.beginPath(); CTX.arc(0, 0, e.size, 0, Math.PI*2);
+        CTX.fillStyle = feverTime > 0 ? '#000' : '#111827'; 
+        CTX.fill();
+        CTX.strokeStyle = feverTime > 0 ? '#d97706' : e.color; CTX.lineWidth = 3; CTX.stroke();
+        
+        if (feverTime <= 0) {
+            CTX.strokeStyle = 'white'; CTX.lineWidth = 4; CTX.lineCap = 'round'; CTX.beginPath();
+            if(e.shape === 'horz'){CTX.moveTo(-10,0); CTX.lineTo(10,0);}
+            else if(e.shape === 'vert'){CTX.moveTo(0,-10); CTX.lineTo(0,10);}
+            else if(e.shape === 'circle'){CTX.arc(0,0,8,0,Math.PI*2);}
+            else if(e.shape === 'v'){CTX.moveTo(-8,-5); CTX.lineTo(0,5); CTX.lineTo(8,-5);}
+            CTX.stroke(); 
+        }
+        
+        CTX.restore();
+    });
+
+    essences.forEach(e => {
+        CTX.shadowBlur = 10; CTX.shadowColor = e.color;
+        CTX.fillStyle = e.color; CTX.beginPath(); CTX.arc(e.x, e.y, 6, 0, Math.PI*2); CTX.fill();
+        CTX.fillStyle = 'white'; CTX.beginPath(); CTX.arc(e.x, e.y, 3, 0, Math.PI*2); CTX.fill();
+        CTX.shadowBlur = 0;
+    });
+
+    particles.forEach(p => { CTX.globalAlpha = p.life; CTX.fillStyle = p.color; CTX.beginPath(); CTX.arc(p.x, p.y, p.size, 0, Math.PI*2); CTX.fill(); });
+    CTX.globalAlpha = 1;
+    shockwaves.forEach(s => { CTX.beginPath(); CTX.arc(s.x, s.y, s.r, 0, Math.PI*2); CTX.strokeStyle = s.color; CTX.lineWidth = 3; CTX.globalAlpha = s.alpha; CTX.stroke(); });
+    CTX.globalAlpha = 1;
+    CTX.restore();
+}
+
+function gameOver() {
+    gameState = 'gameover';
+    document.getElementById('start-screen').style.display = 'flex';
+    document.querySelector('#start-screen h1').innerText = "GAME OVER";
+    document.querySelector('#start-screen p').innerText = `Score: ${score}`;
+    document.getElementById('start-btn').innerText = "RETRY";
+}
+
+function startGame() {
+    initAudio();
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        DeviceOrientationEvent.requestPermission().then(r => { if(r=='granted') window.addEventListener('deviceorientation', handleOrientation); }).catch(console.error);
+    } else {
+        window.addEventListener('deviceorientation', handleOrientation);
+    }
+    gameState = 'playing';
+    score = 0; combo = 0; panicCharge = 50;
+    enemies = []; particles = []; shockwaves = []; essences = [];
+    feverTime = 0; 
+    document.body.classList.remove('fever-mode');
+    document.body.classList.remove('slow-mo');
+    VIGNETTE.style.opacity = 0;
+    slowMoActive = false;
+    timeScale = 1.0;
+
+    collector.x = width/2; collector.y = height/2;
+    grid = new WarpGrid(width, height, 50);
+    updateUI();
+    document.getElementById('start-screen').style.display = 'none';
+    lastTime = performance.now();
+    requestAnimationFrame(gameLoop);
+}
+
+document.getElementById('start-btn').addEventListener('click', startGame);
+BTN_PANIC.addEventListener('click', (e)=>{e.stopPropagation(); usePanic();});
+
+</script>
+</body>
+</html>
+
